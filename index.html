@@ -28,6 +28,7 @@ main{max-width:760px;margin:0 auto;padding:0 14px 40px;min-height:100%}
 .tile small{color:rgba(255,255,255,.78);font-size:.92rem;font-weight:400;max-width:34ch}
 .tprod{background:linear-gradient(160deg,#0a1730 0%,#0a0f16 65%);border-color:#1d3a6e}
 .tprod::after{content:"";position:absolute;inset:auto -30% -30% auto;width:60%;height:60%;background:radial-gradient(circle,rgba(59,130,246,.35),transparent 70%)}
+.tiles .tile{min-height:17vh;padding:20px 22px}.tinv{background:linear-gradient(160deg,#1f0a30 0%,#0a0f16 65%);border-color:#5b1d6e}.tstk{background:linear-gradient(160deg,#04222a 0%,#0a0f16 65%);border-color:#12707a}
 .tsub{background:linear-gradient(160deg,#06231a 0%,#0a0f16 65%);border-color:#1b5e35}
 .tsub::after{content:"";position:absolute;inset:auto -30% -30% auto;width:60%;height:60%;background:radial-gradient(circle,rgba(34,197,94,.35),transparent 70%)}
 
@@ -121,7 +122,7 @@ dl .tot dt,dl .tot dd{color:var(--tx);font-weight:800}
 .ganl{margin:0 0 14px;color:var(--mu)}.ganl b{color:var(--gr)}
 #tour{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:20px;z-index:99}
 #tour .bx{background:var(--pn);border:1px solid var(--ln);border-radius:18px;max-width:380px;width:100%;padding:24px}
-#tour .ti{font-size:2.2rem}#tour h2{margin:8px 0}#tour p{color:var(--mu);line-height:1.5;margin:0 0 18px}
+#tour .ti{font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cy)}#tour h2{margin:8px 0}#tour p{color:var(--mu);line-height:1.5;margin:0 0 18px}
 #tour .dt{display:flex;gap:6px;justify-content:center;margin-bottom:16px}#tour .dt i{width:8px;height:8px;border-radius:50%;background:var(--ln)}#tour .dt i.on{background:var(--gr)}
 #tour .bt{display:flex;gap:10px}#tour .bt button{flex:1}
 optgroup{font-weight:800;font-style:normal;color:#22d3ee;background:#000}
@@ -139,10 +140,36 @@ option:disabled{color:#8b9bb0}
 .tip button{width:100%;font-weight:700}
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);background:var(--gr);color:#03210f;font-weight:800;padding:12px 20px;border-radius:12px;z-index:50;display:none;max-width:90%;text-align:center}
 #toast.bad{background:#7a2b2b;color:#fff}
+#pk{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:30;display:none;align-items:flex-end;justify-content:center}
+#pk .bx{background:var(--pn);border:1px solid var(--ln);border-radius:18px 18px 0 0;width:100%;max-width:760px;max-height:85%;display:flex;flex-direction:column;padding:16px 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
+#pk .hd{display:flex;gap:8px;align-items:center;margin-bottom:10px}#pk .hd h2{flex:1;margin:0}
+#pkl{overflow-y:auto;margin-top:10px;display:grid;gap:8px;align-content:start}
+.pi{display:flex;justify-content:space-between;gap:10px;align-items:center;text-align:left;width:100%}
+.pi small{display:block;color:var(--mu)}.pi>span:last-child{color:var(--gr);font-weight:600;white-space:nowrap}.pi:disabled{opacity:.5;cursor:default}
+.cnt{font-size:.8rem;color:var(--mu);margin:0 0 10px}.cnt:empty{display:none}
+.ln{font-weight:700;color:#fff}
+.ir{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;margin-bottom:8px;padding:14px;background:var(--pn);border-radius:12px}
+.ir b{display:block;font-size:1.05rem;color:#fff;font-weight:800}.ir small{display:block;color:var(--mu);font-size:.8rem;font-weight:400}
+.iq{font-size:1.5rem;font-weight:800;white-space:nowrap;text-align:right}.iq small{display:inline;font-size:.85rem;font-weight:600;color:var(--mu)}
+.sk{margin-bottom:10px;padding:0;overflow:hidden}.sk.op{border-color:#1e3a5f}
+.sk>button.sh{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;padding:18px 16px;background:transparent;border:0;border-radius:0}
+.sk .sn{font-size:1.2rem;font-weight:800;color:#fff}.sk .sv{text-align:right;line-height:1.05}
+.sk .sv b{display:block;font-size:2.4rem;font-weight:800}.sk .sv small{color:var(--mu);font-size:.8rem;font-weight:600}
+.sk .pp{padding:0 16px 16px;border-top:1px solid var(--ln);padding-top:14px}
+.sk .stp{grid-template-columns:56px 1fr 56px}.sk .stp button{height:52px;font-size:1.6rem}.sk .stp input{font-size:1.4rem;font-weight:800;height:52px}
+.sk .sl{display:flex;align-items:center;gap:12px;min-width:0}.sk .sn{overflow-wrap:anywhere}
+.th{width:60px;height:60px;border-radius:12px;flex:none;object-fit:cover;background:var(--pn2);border:1px solid var(--ln);display:grid;place-items:center;font-size:1.6rem;font-weight:800;color:var(--mu)}
+.ph{display:flex;align-items:center;gap:10px;margin-bottom:14px}.ph .th{width:72px;height:72px}.ph .fb{flex:1;display:grid;gap:8px}
+.fbtn{display:block;text-align:center;cursor:pointer;color:var(--tx);background:var(--pn2);border:1px solid var(--ln);border-radius:8px;padding:10px 14px;font-weight:600}
+.fbtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.fbtn:focus-within{outline:2px solid var(--cy);outline-offset:1px}
+.sk .pv{margin:8px 0 12px;font-size:.9rem;color:var(--cy)}
 </style>
 </head>
 <body>
 <script>
+/* Campos numéricos: se usan como texto con teclado decimal para evitar dígitos duplicados al minimizar el teclado (Android). */
+document.addEventListener('input',function(e){var t=e.target;if(!t||!t.hasAttribute||!t.hasAttribute('data-num'))return;var v=t.value,c=v.replace(/[^0-9.,]/g,''),i=c.search(/[.,]/);if(i>-1)c=c.slice(0,i+1)+c.slice(i+1).replace(/[.,]/g,'');if(c!==v)t.value=c},true);
 document.addEventListener('DOMContentLoaded',function(){var e=document.querySelectorAll('.syncst');for(var i=0;i<e.length;i++)e[i].textContent='Datos guardados solo en este dispositivo'});
 </script>
 <main>
@@ -151,43 +178,43 @@ document.addEventListener('DOMContentLoaded',function(){var e=document.querySele
 <h1>Costeo <span>de recetas</span></h1>
 <p class="lead">Seleccione un módulo</p>
 <div class="tiles">
-<button class="tile tprod" type="button" data-view="prod"><span class="ic">🧾</span><b>Productos</b><small>Recetas, costos y precio de venta</small></button>
+<button class="tile tinv" type="button" data-view="inv"><span class="ic">📦</span><b>Inventario</b><small>Ingredientes, precios y existencia</small></button>
+<button class="tile tprod" type="button" data-view="prod"><span class="ic">🧾</span><b>Recetas</b><small>Ingredientes, costos y precio de venta</small></button>
 <button class="tile tsub" type="button" data-view="sub"><span class="ic">🧪</span><b>Subproductos</b><small>Preparaciones intermedias que se usan como ingrediente</small></button>
+<button class="tile tstk" type="button" data-view="stk"><span class="ic">🌮</span><b>Productos</b><small>Lo que produjo y tiene listo para vender</small></button>
 <button class="tile tfac" type="button" data-view="fact"><span class="ic">💵</span><b>Facturación</b><small>Emisión de facturas, envío por WhatsApp e impresión</small></button>
 </div>
 <p class="syncst lead" style="text-align:center;margin-top:18px"></p>
 </section>
 
 <section class="view" id="view-prod">
-<div class="topbar"><button class="back" id="pback" type="button" aria-label="Volver">←</button><h1 id="ptitle">Productos</h1>
+<div class="topbar"><button class="back" id="pback" type="button" aria-label="Volver">←</button><h1 id="ptitle">Recetas</h1>
 <div class="tools"><input id="mon" aria-label="Símbolo de moneda" data-k="root" data-f="mon"><button id="reset" type="button" hidden>Nuevo</button></div></div>
-<div class="tip" data-tip="prod" hidden><b>Cómo crear un producto</b><ol><li>Ingredientes: anote lo que compra, con precio, cantidad y unidad.</li><li>Receta: indique cuánto usa de cada uno en una tanda y cuántas unidades rinde.</li><li>Otros costos: sume mano de obra, gas, empaque y otros gastos de la tanda.</li><li>Precio: elija su ganancia y vea a cuánto vender.</li></ol><button type="button">Entendido</button></div>
+<div class="tip" data-tip="prod" hidden><b>Elaboración de una receta</b><ol><li>Receta: ingrese el nombre del producto y las unidades que rinde cada tanda.</li><li>Ingredientes: seleccione «+ Agregar ingrediente», elija el insumo desde el inventario e indique la cantidad utilizada.</li><li>Otros costos: incluya mano de obra, energía, empaque y gastos adicionales de la tanda.</li><li>Precio: defina el margen de ganancia y la forma de venta, y seleccione «Guardar receta».</li></ol><p>Los insumos deben estar registrados previamente en el módulo Inventario.</p><button type="button">Aceptar</button></div>
 <div id="plist"></div>
 <div id="pedit" style="display:none">
 <nav id="nav" role="tablist">
-<button type="button" data-t="0"><b>1</b>Ingredientes</button>
-<button type="button" data-t="1"><b>2</b>Receta</button>
+<button type="button" data-t="0"><b>1</b>Receta</button>
+<button type="button" data-t="1"><b>2</b>Ingredientes</button>
 <button type="button" data-t="2"><b>3</b>Otros costos</button>
 <button type="button" data-t="3"><b>4</b>Precio</button>
 </nav>
 
 <div class="panel" id="p0">
-<h2>Ingredientes comprados</h2>
-<p class="lead">Compras directas: precio pagado, cantidad y unidad de medida. La merma es el porcentaje que se pierde al limpiar o procesar.</p>
-<div id="ingList"></div>
-<button class="add" id="addIng" type="button">+ Agregar ingrediente</button>
-<div class="foot"><span></span><button class="pri" data-go="1" type="button">Siguiente: Receta</button></div>
-</div>
-
-<div class="panel" id="p1">
 <h2>Receta</h2>
-<p class="lead">Indique la cantidad utilizada de cada ingrediente o subproducto en una tanda.</p>
+<p class="lead">Escriba el nombre del producto y cuántas unidades rinde una tanda.</p>
 <div class="card">
 <div class="g2" style="margin:0">
 <label>Nombre del producto<input data-k="rec" data-f="n" id="rn"></label>
-<label>Unidades o porciones que rinde la tanda<input type="number" inputmode="decimal" min="0" step="any" data-k="rec" data-f="rinde" id="rr"></label>
+<label>Unidades o porciones que rinde la tanda<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="rec" data-f="rinde" id="rr"></label>
 </div>
 </div>
+<div class="foot"><span></span><button class="pri" data-go="1" type="button">Siguiente: Ingredientes</button></div>
+</div>
+
+<div class="panel" id="p1">
+<h2>Ingredientes</h2>
+<p class="lead">Agregue solo los que usa en esta receta, tomados de su Inventario, e indique la cantidad usada en una tanda.</p>
 <div id="lineList"></div>
 <button class="add" id="addLine" type="button">+ Agregar ingrediente a la receta</button>
 <div class="card hl"><dl><div class="tot"><dt>Ingredientes de la tanda</dt><dd id="rsum">—</dd></div><div><dt>Ingredientes por unidad</dt><dd id="rsumU">—</dd></div></dl></div>
@@ -199,15 +226,15 @@ document.addEventListener('DOMContentLoaded',function(){var e=document.querySele
 <p class="lead">Costos adicionales de producción y venta.</p>
 <div class="card"><h2>Costos de la tanda</h2>
 <div class="g2" style="margin:0">
-<label>Minutos de trabajo (toda la tanda)<input type="number" inputmode="decimal" min="0" step="any" data-k="c" data-f="min"></label>
-<label>Pago por hora<input type="number" inputmode="decimal" min="0" step="any" data-k="c" data-f="hora"></label>
-<label>Gas, luz o agua (toda la tanda)<input type="number" inputmode="decimal" min="0" step="any" data-k="c" data-f="en"></label>
-<label>Empaque o envase (de toda la tanda)<input type="number" inputmode="decimal" min="0" step="any" data-k="c" data-f="emp"></label>
-<label>Envío o entrega (de toda la tanda)<input type="number" inputmode="decimal" min="0" step="any" data-k="c" data-f="env"></label>
+<label>Minutos de trabajo (toda la tanda)<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="c" data-f="min"></label>
+<label>Pago por hora<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="c" data-f="hora"></label>
+<label>Gas, luz o agua (toda la tanda)<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="c" data-f="en"></label>
+<label>Empaque o envase (de toda la tanda)<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="c" data-f="emp"></label>
+<label>Envío o entrega (de toda la tanda)<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="c" data-f="env"></label>
 </div></div>
 <div class="card"><h2>Otros gastos (opcional)</h2>
 <p class="lead" style="margin-bottom:10px">Gastos generales (alquiler, internet, etc.) que se asignan a esta tanda. Campo opcional.</p>
-<label>Monto para toda la tanda<input type="number" inputmode="decimal" min="0" step="any" data-k="c" data-f="fij"></label></div>
+<label>Monto para toda la tanda<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="c" data-f="fij"></label></div>
 <div class="foot"><button data-go="1" type="button">Atrás</button><button class="pri" data-go="3" type="button">Siguiente: Precio</button></div>
 </div>
 
@@ -217,31 +244,46 @@ document.addEventListener('DOMContentLoaded',function(){var e=document.querySele
 <p class="lead">Indique qué porcentaje del precio de venta quiere como ganancia.</p>
 <div class="card">
 <div class="g2">
-<label>Ganancia deseada (%)<input type="number" inputmode="decimal" min="0" step="any" data-k="c" data-f="mar" id="mar"></label>
-<label>Comisión de venta o pasarela (%)<input type="number" inputmode="decimal" min="0" step="any" data-k="c" data-f="com"></label>
+<label>Ganancia deseada (%)<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="c" data-f="mar" id="mar"></label>
+<label>Comisión de venta o pasarela (%)<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="c" data-f="com"></label>
 </div>
-<div class="g2" style="margin-bottom:0"><label>Impuesto / IVA (%)<input type="number" inputmode="decimal" min="0" step="any" data-k="c" data-f="iva"></label><span></span></div>
+<div class="g2" style="margin-bottom:0"><label>Impuesto / IVA (%)<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="c" data-f="iva"></label><span></span></div>
 <div class="chips" id="chips"></div>
 </div>
 <div id="out"></div>
 <div id="outEnd"></div>
-<div class="card hlg" id="savecat"><h2>¿Cómo lo vende en Facturación?</h2><p class="lead" id="sc_h" style="margin:0 0 12px"></p><div class="seg" id="sc_m"></div><div id="sc_pk"><label>Unidades por empaque<input id="sc_u" type="number" inputmode="numeric" min="1" step="1"></label><p class="lead" style="margin:10px 0 0">Ejemplo: si vende bolsas de 12 tortillas, escriba 12. El precio de la bolsa es 12 veces el precio de una unidad.</p></div></div>
-<div class="foot"><button data-go="2" type="button">Atrás</button><button class="pri" id="psave" type="button">Guardar producto</button></div>
+<div class="card hlg" id="savecat"><h2>¿Cómo lo vende en Facturación?</h2><p class="lead" id="sc_h" style="margin:0 0 12px"></p><div class="seg" id="sc_m"></div><div id="sc_pk"><label>Unidades por empaque<input id="sc_u" type="text" data-num inputmode="numeric" min="1" step="1"></label><p class="lead" style="margin:10px 0 0">Ejemplo: si vende bolsas de 12 tortillas, escriba 12. El precio de la bolsa es 12 veces el precio de una unidad.</p></div></div>
+<div class="foot"><button data-go="2" type="button">Atrás</button><button class="pri" id="psave" type="button">Guardar receta</button></div>
 </div>
 </div>
 </section>
 
+<section class="view" id="view-inv">
+<div class="topbar"><button class="back" type="button" data-view="home" aria-label="Volver">←</button><h1>Inventario</h1></div>
+<p class="lead">Insumos con su precio y existencia. Las recetas toman los datos de este módulo. Actualice la existencia con cada compra.</p>
+<div class="tip" data-tip="inv" hidden><b>Registro de inventario</b><ol><li>Seleccione «+ Agregar ingrediente» e ingrese el nombre, el precio pagado, la cantidad comprada y la unidad de medida.</li><li>Indique la existencia actual y actualícela con cada nueva compra.</li><li>Seleccione un registro para editarlo. Utilice el buscador para localizarlo por nombre.</li></ol><button type="button">Aceptar</button></div>
+<button class="add" id="addInv" type="button">+ Agregar ingrediente</button>
+<input id="invQ" type="search" placeholder="Buscar ingrediente por nombre…" aria-label="Buscar ingrediente" autocomplete="off" style="margin-bottom:10px">
+<p class="cnt" id="invN"></p>
+<div id="invList"></div>
+</section>
+<section class="view" id="view-stk">
+<div class="topbar"><button class="back" type="button" data-view="home" aria-label="Volver">←</button><h1>Productos</h1></div>
+<p class="lead">Unidades disponibles para la venta. Seleccione un producto para registrar su producción: se descontarán los insumos del inventario, y cada factura descontará las unidades vendidas.</p>
+<div class="tip" data-tip="stk" hidden><b>Registro de producción</b><ol><li>Seleccione un producto e ingrese las unidades producidas, o utilice los botones + y −.</li><li>Confirme con «Producir»: las unidades se suman a las disponibles y los insumos se descuentan del inventario.</li><li>Opcionalmente, asocie una fotografía para identificar cada producto.</li></ol><button type="button">Aceptar</button></div>
+<div id="stkList"></div>
+</section>
 <section class="view" id="view-sub">
 <div class="topbar"><button class="back" type="button" data-view="home" aria-label="Volver">←</button><h1>Subproductos</h1></div>
-<p class="lead">Preparaciones propias que luego usa como ingrediente.</p>
-<div class="tip" data-tip="sub" hidden><b>Qué es un subproducto</b><p>Es algo que usted prepara con varios insumos, como masa de maíz, salsa o crema. Escriba el costo total de los insumos de una tanda y cuánto rinde. Después lo elige como ingrediente en la receta de sus productos.</p><button type="button">Entendido</button></div>
+<p class="lead">Preparaciones intermedias que se utilizan como ingrediente en las recetas.</p>
+<div class="tip" data-tip="sub" hidden><b>Subproductos</b><p>Un subproducto es una preparación intermedia elaborada con varios insumos, como masa, salsa o crema. Registre el costo total de los insumos de una tanda y su rendimiento; luego podrá seleccionarlo como ingrediente en sus recetas.</p><button type="button">Aceptar</button></div>
 <div id="subList"></div>
 <button class="add" id="addSub" type="button">+ Agregar subproducto</button>
 </section>
 
 <section class="view" id="view-fact">
 <div class="topbar"><button class="back" type="button" data-view="home" aria-label="Volver">←</button><h1>Facturación</h1></div>
-<div class="tip" data-tip="fact" hidden><b>Cómo facturar</b><ol><li>Escriba el cliente y agregue los productos con su cantidad.</li><li>Toque Generar factura.</li><li>Imprímala o envíela por WhatsApp como imagen.</li></ol><p>Solo aparecen los productos que tienen nombre y receta completa.</p><button type="button">Entendido</button></div>
+<div class="tip" data-tip="fact" hidden><b>Emisión de facturas</b><ol><li>Ingrese el cliente y agregue los productos con su cantidad.</li><li>Seleccione «Generar factura».</li><li>Imprima el comprobante o envíelo por WhatsApp como imagen.</li></ol><p>Solo se listan los productos con nombre y receta completa. Cada factura descuenta del stock las unidades vendidas.</p><button type="button">Aceptar</button></div>
 <div class="fnav" id="fnav"><button type="button" data-ft="nueva" aria-selected="true">Nueva</button><button type="button" data-ft="hist" aria-selected="false">Historial</button><button type="button" data-ft="ajustes" aria-selected="false">Ajustes</button></div>
 <section class="fp on" id="fp-nueva">
 <div class="card g2">
@@ -251,11 +293,11 @@ document.addEventListener('DOMContentLoaded',function(){var e=document.querySele
 <div id="fitems"></div>
 <button class="add" id="faddIt" type="button">+ Agregar producto</button>
 <div class="card">
-<div class="g2" style="margin:0"><label>Envío (RD$)<input id="fenv" type="number" inputmode="decimal" min="0" step="any"></label><label>Forma de pago<select id="fpago"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>Pendiente de pago</option></select></label></div>
+<div class="g2" style="margin:0"><label>Envío (RD$)<input id="fenv" type="text" data-num inputmode="decimal" min="0" step="any"></label><label>Forma de pago<select id="fpago"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>Pendiente de pago</option></select></label></div>
 <div hidden><input id="fdes"><select id="fitb"><option value="0">No</option></select><input id="fnota"></div>
 </div>
 <div class="ftot"><small>Total a cobrar</small><b id="ftt">RD$ 0.00</b></div>
-<button class="pri" id="fgen" type="button">Generar factura e imprimir</button>
+<button class="pri" id="fgen" type="button">Generar factura</button>
 </section>
 
 <section class="fp" id="fp-hist">
@@ -289,6 +331,7 @@ document.addEventListener('DOMContentLoaded',function(){var e=document.querySele
 </section>
 </main>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="pk" role="dialog" aria-modal="true"><div class="bx"><div class="hd"><h2>Agregar a la receta</h2><button type="button" id="pkc">Cerrar</button></div><input id="pkq" type="search" placeholder="Buscar por nombre…" aria-label="Buscar ingrediente" autocomplete="off"><div id="pkl"></div></div></div>
 <div id="fpv"><img id="fpi" alt="Factura"><p class="lead">Mantenga presionada la imagen para guardarla o compartirla.</p><button id="fpc" type="button">Cerrar</button></div>
 
 <script>
@@ -318,14 +361,22 @@ function subBase(s){var t=0;(s.ins||[]).forEach(function(x){t+=N(x.c)});t+=N(s.m
 function item(ref){if(!ref)return null;var t=ref[0],id=ref.slice(1);if(t==='g'){var g=ing(id);return g?{u:g.u,base:base(g)}:null}if(t==='s'){var s=subp(id);return s?{u:s.yu,base:subBase(s)}:null}return null}
 function lineCost(l){var it=item(l.i);if(!it||!U[l.u]||U[l.u][1]!==U[it.u][1])return 0;return N(l.q)*U[l.u][2]*it.base}
 function fixLines(){S.lines.forEach(function(l){var it=item(l.i);if(it&&(!U[l.u]||U[l.u][1]!==U[it.u][1]))l.u=it.u})}
+function fx(v){return Math.round(v*100)/100}
+function STK(g){var w=N(g.st),h='<div class="g2" style="margin:10px 0 0"><label>Existencia<input type="text" data-num inputmode="decimal" data-k="ings" data-id="'+g.id+'" data-f="st" value="'+esc(g.st)+'"></label><label>Avisar si baja de<input type="text" data-num inputmode="decimal" data-k="ings" data-id="'+g.id+'" data-f="lo" value="'+esc(g.lo)+'"></label></div>';
+if(w<=0)h+='<p class="hint" style="color:#ffb4b4">Sin existencia</p>';else if(N(g.lo)>0&&w<N(g.lo))h+='<p class="hint" style="color:#fbbf24">Existencia baja</p>';return h}
+function rowInv(g){var w=N(g.st),lo=N(g.lo),c=base(g)*U[g.u][2],cl=w<=0?'#ffb4b4':(lo>0&&w<lo?'#fbbf24':'var(--gr)');
+return '<button type="button" class="ir" data-invopen="'+g.id+'"><span><b>'+esc(g.n||'(sin nombre)')+'</b><small>'+(c>0?fmt(c)+' por '+U[g.u][3]:'Sin precio')+(w<=0?' · Sin existencia':(lo>0&&w<lo?' · Existencia baja':''))+'</small></span><span class="iq" style="color:'+cl+'">'+fx(w)+' <small>'+U[g.u][3]+'</small></span></button>'}
 function renderIngs(){
-$('ingList').innerHTML=S.ings.length?S.ings.map(function(g){return '<div class="card"><div class="top"><input data-k="ings" data-id="'+g.id+'" data-f="n" placeholder="Nombre del ingrediente" value="'+esc(g.n)+'"><button class="x" type="button" data-del="ings" data-id="'+g.id+'" aria-label="Quitar ingrediente">✕</button></div><div class="g4">'+
-'<label>Precio pagado<input type="number" inputmode="decimal" min="0" step="any" data-k="ings" data-id="'+g.id+'" data-f="p" value="'+esc(g.p)+'"></label>'+
-'<label>Cantidad comprada<input type="number" inputmode="decimal" min="0" step="any" data-k="ings" data-id="'+g.id+'" data-f="q" value="'+esc(g.q)+'"></label>'+
+var q=norm($('invQ')?$('invQ').value.trim():''),all=S.ings.slice().reverse().filter(function(g){return !q||norm(g.n).indexOf(q)>=0}),shown=all.slice(0,invLimit);var IH=shown.length?shown.map(function(g){if(String(g.id)!==String(openInv))return rowInv(g);return '<div class="card hl"><div class="top"><input data-k="ings" data-id="'+g.id+'" data-f="n" placeholder="Nombre del ingrediente" value="'+esc(g.n)+'"><button class="x" type="button" data-del="ings" data-id="'+g.id+'" aria-label="Quitar ingrediente">✕</button></div><div class="g4">'+
+'<label>Precio pagado<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="ings" data-id="'+g.id+'" data-f="p" value="'+esc(g.p)+'"></label>'+
+'<label>Cantidad comprada<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="ings" data-id="'+g.id+'" data-f="q" value="'+esc(g.q)+'"></label>'+
 '<label>Unidad<select data-k="ings" data-id="'+g.id+'" data-f="u">'+opts(g.u)+'</select></label>'+
-'<label>Merma %<input type="number" inputmode="decimal" min="0" max="90" step="any" data-k="ings" data-id="'+g.id+'" data-f="m" value="'+esc(g.m)+'"></label></div><p class="hint" data-cost="g'+g.id+'"></p></div>'}).join(''):'<div class="empty">No hay ingredientes registrados.</div>';
+'<label>Merma %<input type="text" data-num inputmode="decimal" min="0" max="90" step="any" data-k="ings" data-id="'+g.id+'" data-f="m" value="'+esc(g.m)+'"></label></div>'+STK(g)+'<p class="hint" data-cost="g'+g.id+'"></p><button class="pri" type="button" data-invclose="1" style="width:100%;margin-top:10px">Listo</button></div>'}).join('')+(all.length>shown.length?'<button class="add" type="button" data-invmore="1">Mostrar más ('+(all.length-shown.length)+' restantes)</button>':''):'<div class="empty">'+(S.ings.length?'Ningún ingrediente coincide con la búsqueda.':'No hay ingredientes registrados.')+'</div>';
+if($('invList'))$('invList').innerHTML=IH;if($('invN'))$('invN').textContent=S.ings.length?(q?all.length+' de '+S.ings.length+' ingredientes':S.ings.length+' ingrediente'+(S.ings.length===1?'':'s')):'';
 refresh()}
-var lastFin=0,lastRinde=0,editing=false;
+var lastFin=0,lastRinde=0,editing=false,invLimit=25,openInv=null,openStk=null;
+function norm(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function dropRef(r){S.prods.forEach(function(p){p.lines=p.lines.filter(function(l){return l.i!==r})});S.lines=S.lines.filter(function(l){return l.i!==r})}
 function sellMode(){var p=curProd();return p&&(p.sell==='p'||Math.floor(N(p.pack))>1)?'p':'u'}
 function syncSC(){var u=$('sc_u');if(!u)return;var m=sellMode(),n=Math.floor(N(u.value)),rr=Math.floor(lastRinde);
 $('sc_m').innerHTML='<button type="button" data-sell="u"'+(m==='u'?' class="on"':'')+'>Por unidad</button><button type="button" data-sell="p"'+(m==='p'?' class="on"':'')+'>Por empaque</button>';
@@ -338,28 +389,45 @@ $('sc_h').textContent=h}
 function setPack(n){n=Math.floor(N(n));var p=curProd();if(p){p.pack=n>1?n:0;p.sell='p'}$('sc_u').value=n>1?n:'';save();syncSC()}
 function setSell(m){var p=curProd();if(!p)return;p.sell=m;if(m==='u'){p.pack=0;$('sc_u').value=''}save();syncSC()}
 document.addEventListener('input',function(e){if(e.target.id==='sc_u'){var p=curProd();if(p){var n=Math.floor(N(e.target.value));p.pack=n>1?n:0;if(n>1)p.sell='p';save()}syncSC()}});
-var toastT;function toast(m,bad){var e=$('toast');e.textContent=m;e.className=bad?'bad':'';e.style.display='block';clearTimeout(toastT);toastT=setTimeout(function(){e.style.display='none'},2600)}
+var toastT;function toast(m,bad){var e=$('toast');e.textContent=m;e.className=bad?'bad':'';e.style.display='block';clearTimeout(toastT);toastT=setTimeout(function(){e.style.display='none'},bad?7000:2600)}
 function curProd(){for(var i=0;i<S.prods.length;i++)if(S.prods[i].id===S.cur)return S.prods[i]}
 function migrate(){if(!Array.isArray(S.prods)){S.prods=[];if(S.rec&&(S.rec.n||(S.lines&&S.lines.length))){S.prods.push({id:'r1',rec:S.rec,lines:S.lines,c:S.c});S.cur='r1'}}S.prods=S.prods.filter(function(q){return !q.draft&&q.rec&&((q.rec.n||'').trim()||(q.lines&&q.lines.length))});var p=S.cur?curProd():null;if(p){S.rec=p.rec;S.lines=p.lines;S.c=p.c}else{S.cur=null;S.rec={n:'',rinde:'1'};S.lines=[];S.c=cpNew()}}
 function cpNew(){var c=S.c||{};return{min:'',hora:c.hora||'',en:'',emp:'',env:'',fij:'',uni:'',com:c.com||'0',mar:c.mar||'0',iva:c.iva||'0'}}
 function uRaw(p){var a=[S.rec,S.lines,S.c];S.rec=p.rec;S.lines=p.lines;S.c=p.c;var R=calc();S.rec=a[0];S.lines=a[1];S.c=a[2];return R.err?0:R.pv*(1+R.iva)}
 function uPrice(p){return Math.round(uRaw(p)*100)/100}
-function renderProdList(){$('plist').innerHTML='<button class="pri" id="pnew" type="button" style="width:100%;margin-bottom:12px">+ Nuevo producto</button>'+(S.prods.length?S.prods.map(function(p){var w=uRaw(p),u=Math.round(w*100)/100,pk=Math.floor(N(p.pack));return '<div class="card"><b>'+esc(p.rec.n||'Producto sin nombre')+'</b><div class="lead" style="margin:2px 0 10px">'+esc(p.rec.rinde||1)+' unid. por tanda · '+(u>0?'Precio: '+fmt(u)+' por unidad'+(pk>1?' · paquete de '+pk+' a '+fmt(Math.round(w*pk*100)/100):''):'Falta completar la receta')+'<br>'+(u>0&&(p.rec.n||'').trim()?'✓ Disponible en Facturación':'No aparece en Facturación hasta tener nombre y receta completa')+'</div><div class="g2" style="margin:0"><button type="button" data-popen="'+esc(p.id)+'">Editar</button><button type="button" data-pdel="'+esc(p.id)+'" style="color:#ffb4b4">Eliminar</button></div></div>'}).join(''):'<div class="empty">No hay productos registrados.</div>')}
-function showList(){editing=false;dropDrafts();$('plist').style.display='';$('pedit').style.display='none';$('ptitle').textContent='Productos';renderProdList();window.scrollTo(0,0)}
-function openProd(id){var p=null;S.prods.forEach(function(x){if(x.id===id)p=x});if(!p)return;S.cur=id;S.rec=p.rec;S.lines=p.lines;S.c=p.c;editing=true;$('sc_u').value=p.pack>1?p.pack:'';syncSC();$('plist').style.display='none';$('pedit').style.display='';$('ptitle').textContent='Editar producto';fill();renderIngs();renderLines();go(0);save()}
+function renderProdList(){$('plist').innerHTML='<button class="pri" id="pnew" type="button" style="width:100%;margin-bottom:12px">+ Nueva receta</button>'+(S.prods.length?S.prods.map(function(p){var w=uRaw(p),u=Math.round(w*100)/100,pk=Math.floor(N(p.pack));return '<div class="card"><b>'+esc(p.rec.n||'Receta sin nombre')+'</b><div class="lead" style="margin:2px 0 10px">'+esc(p.rec.rinde||1)+' unid. por tanda · '+(u>0?'Precio: '+fmt(u)+' por unidad'+(pk>1?' · paquete de '+pk+' a '+fmt(Math.round(w*pk*100)/100):''):'Falta completar la receta')+'<br>'+(u>0&&(p.rec.n||'').trim()?'✓ Disponible en Facturación':'No aparece en Facturación hasta tener nombre y receta completa')+'</div><div class="g2" style="margin:0"><button type="button" data-popen="'+esc(p.id)+'">Editar</button><button type="button" data-pdel="'+esc(p.id)+'" style="color:#ffb4b4">Eliminar</button></div></div>'}).join(''):'<div class="empty">No hay recetas registradas.</div>')}
+function showList(){editing=false;dropDrafts();$('plist').style.display='';$('pedit').style.display='none';$('ptitle').textContent='Recetas';renderProdList();window.scrollTo(0,0)}
+function openProd(id){var p=null;S.prods.forEach(function(x){if(x.id===id)p=x});if(!p)return;S.cur=id;S.rec=p.rec;S.lines=p.lines;S.c=p.c;editing=true;$('sc_u').value=p.pack>1?p.pack:'';syncSC();$('plist').style.display='none';$('pedit').style.display='';$('ptitle').textContent='Editar receta';fill();renderIngs();renderLines();go(0);save()}
 function newProd(){var p={id:'r'+Date.now(),draft:true,rec:{n:'',rinde:'1'},lines:[],c:cpNew()};S.prods.push(p);openProd(p.id);go(0)}
 function dropDrafts(){var n=S.prods.length;S.prods=S.prods.filter(function(p){return !p.draft});if(S.prods.length!==n){if(S.cur&&!curProd()){S.cur=null;S.rec={n:'',rinde:'1'};S.lines=[];S.c=cpNew()}save()}}
+function thumb(p){var n=(p.rec.n||'').trim();return p.img?'<img class="th" alt="Foto de '+esc(n)+'" src="'+esc(p.img)+'">':'<span class="th" aria-hidden="true">'+esc(n.charAt(0).toUpperCase())+'</span>'}
+function shrinkImg(file,cb){var u=URL.createObjectURL(file),im=new Image();im.onload=function(){try{var z=240,c=document.createElement('canvas');c.width=c.height=z;var g=c.getContext('2d'),m=Math.min(im.width,im.height),sx=(im.width-m)/2,sy=(im.height-m)/2;g.fillStyle='#fff';g.fillRect(0,0,z,z);g.drawImage(im,sx,sy,m,m,0,0,z,z);URL.revokeObjectURL(u);cb(c.toDataURL('image/jpeg',.78))}catch(e){cb(null)}};im.onerror=function(){URL.revokeObjectURL(u);cb(null)};im.src=u}
+function renderStk(){var h='';S.prods.forEach(function(p){var n=(p.rec.n||'').trim();if(p.draft||!n)return;var w=N(p.stock),op=String(p.id)===String(openStk),id=esc(p.id);
+h+='<div class="card sk'+(op?' op':'')+'"><button type="button" class="sh" data-stkopen="'+id+'" aria-expanded="'+op+'"><span class="sl">'+thumb(p)+'<span class="sn">'+esc(n)+'</span></span><span class="sv"><b style="color:'+(w>0?'var(--gr)':'#ffb4b4')+'">'+fx(w)+'</b><small>'+(w===1?'disponible':'disponibles')+'</small></span></button>';
+if(op)h+='<div class="pp"><div class="ph">'+thumb(p)+'<div class="fb"><label class="fbtn">'+(p.img?'Cambiar foto':'Agregar foto')+'<input type="file" accept="image/*" data-pimg="'+id+'"></label>'+(p.img?'<button type="button" data-pimgdel="'+id+'">Quitar foto</button>':'')+'</div></div><div class="lb"><span>¿Cuántas unidades produjo?</span><div class="stp"><button type="button" data-pstep="-1" data-pid="'+id+'" aria-label="Menos">−</button><input type="text" data-num inputmode="decimal" placeholder="0" data-pq="'+id+'" aria-label="Cantidad producida"><button type="button" data-pstep="1" data-pid="'+id+'" aria-label="Más">+</button></div></div><p class="pv" data-pv="'+id+'">Tiene '+fx(w)+' disponibles</p><div class="g2" style="margin:0"><button type="button" data-stkopen="'+id+'">Cancelar</button><button class="pri" type="button" data-produce="'+id+'">Producir</button></div></div>';
+h+='</div>'});$('stkList').innerHTML=h||'<div class="empty">Cree una receta con nombre para poder producirla.</div>'}
+function pprev(id){var p=null;S.prods.forEach(function(x){if(x.id===id)p=x});var q=document.querySelector('[data-pq="'+id+'"]'),e=document.querySelector('[data-pv="'+id+'"]');if(!p||!q||!e)return;var n=N(q.value);e.textContent=n>0?'Quedarán '+fx(N(p.stock)+n)+' disponibles (+'+fx(n)+')':'Tiene '+fx(N(p.stock))+' disponibles'}
+function produce(id){var p=null;S.prods.forEach(function(x){if(x.id===id)p=x});if(!p)return;
+var q=document.querySelector('[data-pq="'+id+'"]'),n=N(q&&q.value),r=N(p.rec.rinde);
+if(n<=0)return toast('Escriba cuántas unidades produjo.',1);
+if(!p.lines.length||r<=0)return toast('La receta está incompleta.',1);
+var need={},bad=[];
+p.lines.forEach(function(l){if(!l.i||l.i[0]!=='g')return;var g=ing(l.i.slice(1));if(!g||!U[l.u]||!U[g.u]||U[l.u][1]!==U[g.u][1])return;need[g.id]=(need[g.id]||0)+N(l.q)*U[l.u][2]/U[g.u][2]*(n/r)/(1-Math.min(N(g.m),90)/100)});
+Object.keys(need).forEach(function(k){var g=ing(k);if(need[k]>N(g.st)+1e-9)bad.push((g.n||'Ingrediente')+': necesita '+fx(need[k])+', hay '+fx(N(g.st))+' '+U[g.u][0])});
+if(bad.length)return toast('No alcanza el inventario. '+bad.slice(0,3).join(' · '),1);
+Object.keys(need).forEach(function(k){var g=ing(k);g.st=String(Math.round((N(g.st)-need[k])*10000)/10000)});
+p.stock=fx(N(p.stock)+n);save();openStk=null;renderStk();renderIngs();toast('Producido: '+fx(n)+' unid.')}
 function renderSubs(){
 $('subList').innerHTML=S.subs.length?S.subs.map(function(s){
-var rows=(s.ins||[]).map(function(x,i){return '<div class="subins"><input placeholder="Insumo" data-k="subin" data-sid="'+s.id+'" data-id="'+i+'" data-f="n" value="'+esc(x.n)+'"><input type="number" inputmode="decimal" min="0" step="any" placeholder="'+S.mon+' costo" aria-label="Costo en '+S.mon+' de este insumo" data-k="subin" data-sid="'+s.id+'" data-id="'+i+'" data-f="c" value="'+esc(x.c)+'"><button class="x" type="button" data-delsubin="'+s.id+'" data-id="'+i+'" aria-label="Quitar insumo">✕</button></div>'}).join('');
+var rows=(s.ins||[]).map(function(x,i){return '<div class="subins"><input placeholder="Insumo" data-k="subin" data-sid="'+s.id+'" data-id="'+i+'" data-f="n" value="'+esc(x.n)+'"><input type="text" data-num inputmode="decimal" min="0" step="any" placeholder="'+S.mon+' costo" aria-label="Costo en '+S.mon+' de este insumo" data-k="subin" data-sid="'+s.id+'" data-id="'+i+'" data-f="c" value="'+esc(x.c)+'"><button class="x" type="button" data-delsubin="'+s.id+'" data-id="'+i+'" aria-label="Quitar insumo">✕</button></div>'}).join('');
 return '<div class="card hlg"><div class="top"><input data-k="subs" data-id="'+s.id+'" data-f="n" placeholder="Nombre del subproducto" value="'+esc(s.n)+'"><button class="x" type="button" data-del="subs" data-id="'+s.id+'" aria-label="Quitar subproducto">✕</button></div>'+
 '<p class="lead" style="margin:0 0 8px">Insumos utilizados y su costo total (en '+S.mon+') para toda la tanda de este subproducto:</p>'+
 rows+'<button type="button" class="add" data-addsubin="'+s.id+'" style="margin-bottom:10px">+ Agregar insumo</button>'+
 '<div class="g4">'+
-'<label>Minutos de trabajo<input type="number" inputmode="decimal" min="0" step="any" data-k="subs" data-id="'+s.id+'" data-f="min" value="'+esc(s.min)+'"></label>'+
-'<label>Pago por hora<input type="number" inputmode="decimal" min="0" step="any" data-k="subs" data-id="'+s.id+'" data-f="hora" value="'+esc(s.hora)+'"></label>'+
-'<label>Gas, luz o agua<input type="number" inputmode="decimal" min="0" step="any" data-k="subs" data-id="'+s.id+'" data-f="en" value="'+esc(s.en)+'"></label></div>'+
-'<div class="g2" style="margin-top:10px"><label>Rinde (cantidad)<input type="number" inputmode="decimal" min="0" step="any" data-k="subs" data-id="'+s.id+'" data-f="yq" value="'+esc(s.yq)+'"></label>'+
+'<label>Minutos de trabajo<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="subs" data-id="'+s.id+'" data-f="min" value="'+esc(s.min)+'"></label>'+
+'<label>Pago por hora<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="subs" data-id="'+s.id+'" data-f="hora" value="'+esc(s.hora)+'"></label>'+
+'<label>Gas, luz o agua<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="subs" data-id="'+s.id+'" data-f="en" value="'+esc(s.en)+'"></label></div>'+
+'<div class="g2" style="margin-top:10px"><label>Rinde (cantidad)<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="subs" data-id="'+s.id+'" data-f="yq" value="'+esc(s.yq)+'"></label>'+
 '<label>Unidad del resultado<select data-k="subs" data-id="'+s.id+'" data-f="yu">'+opts(s.yu)+'</select></label></div>'+
 '<p class="hint" data-cost="s'+s.id+'"></p></div>'
 }).join(''):'<div class="empty">No hay subproductos registrados.</div>';
@@ -372,12 +440,22 @@ if(S.subs.length){h+='<optgroup label="Subproductos">';S.subs.forEach(function(x
 return h}
 function renderLines(){
 fixLines();
-$('lineList').innerHTML=S.lines.length?S.lines.map(function(l,x){var it=item(l.i);
-return '<div class="card line"><label class="full">Ingrediente o subproducto<select data-k="lines" data-id="'+x+'" data-f="i">'+itemOptions(l.i)+'</select></label>'+
-'<label>Cantidad usada<input type="number" inputmode="decimal" min="0" step="any" data-k="lines" data-id="'+x+'" data-f="q" value="'+esc(l.q)+'"></label>'+
+$('lineList').innerHTML=S.lines.length?S.lines.map(function(l,x){var it=item(l.i),r=l.i||'',nm=r[0]==='s'?subp(r.slice(1)):ing(r.slice(1));
+return '<div class="card line"><div class="top full"><div><div class="ln">'+esc(nm?(nm.n||'(sin nombre)'):'(eliminado)')+'</div><small style="color:var(--mu)">'+(r[0]==='s'?'Subproducto':'Ingrediente')+'</small></div><button class="x" type="button" data-del="lines" data-id="'+x+'" aria-label="Quitar de la receta">✕</button></div>'+
+'<label>Cantidad usada<input type="text" data-num inputmode="decimal" min="0" step="any" data-k="lines" data-id="'+x+'" data-f="q" value="'+esc(l.q)+'"></label>'+
 '<label>Unidad<select data-k="lines" data-id="'+x+'" data-f="u">'+opts(l.u,it?U[it.u][1]:null)+'</select></label>'+
-'<div class="lc"><span>Costo en la receta <b data-lc="'+x+'"></b></span><button class="x" type="button" data-del="lines" data-id="'+x+'" aria-label="Quitar de la receta">✕</button></div></div>'}).join(''):'<div class="empty">La receta no tiene ingredientes.</div>';
+'<div class="lc"><span>Costo en la receta <b data-lc="'+x+'"></b></span></div></div>'}).join(''):'<div class="empty">La receta aún no tiene ingredientes. Toque «Agregar ingrediente».</div>';
 refresh()}
+function drawPk(){var q=norm($('pkq').value.trim()),A=[],used={};S.lines.forEach(function(l){used[l.i]=1});
+S.ings.forEach(function(g){A.push({r:'g'+g.id,n:g.n||'',k:'Ingrediente',st:' · Existencia: '+fx(N(g.st))+' '+U[g.u][3],c:base(g)*U[g.u][2],u:U[g.u][3]})});
+S.subs.forEach(function(x){A.push({r:'s'+x.id,n:x.n||'',k:'Subproducto',st:'',c:subBase(x)*(U[x.yu]?U[x.yu][2]:0),u:U[x.yu]?U[x.yu][3]:''})});
+A=A.filter(function(a){return !q||norm(a.n).indexOf(q)>=0}).sort(function(a,b){return a.n.localeCompare(b.n,'es')});
+var h=A.slice(0,40).map(function(a){return '<button type="button" class="pi" data-pick="'+a.r+'"'+(used[a.r]?' disabled':'')+'><span>'+esc(a.n||'(sin nombre)')+'<small>'+a.k+(used[a.r]?' · ya está en la receta':a.st)+'</small></span><span>'+(a.c>0?fmt(a.c)+'/'+a.u:'sin precio')+'</span></button>'}).join('');
+if(A.length>40)h+='<p class="cnt">Se muestran 40 de '+A.length+'. Escriba para buscar por nombre.</p>';
+$('pkl').innerHTML=h||'<div class="empty">'+(S.ings.length||S.subs.length?'Ningún resultado.':'Su inventario está vacío. Agregue ingredientes en Inventario.')+'</div>'}
+function openPk(){$('pkq').value='';$('pk').style.display='flex';drawPk();$('pkq').focus()}
+function closePk(){$('pk').style.display='none'}
+function pickItem(r){if(S.lines.some(function(l){return l.i===r}))return toast('Ese ingrediente ya está en la receta.',1);var it=item(r);if(!it)return;S.lines.push({i:r,q:'',u:it.u});save();closePk();renderLines();var a=document.querySelectorAll('#lineList [data-f="q"]');if(a.length){a[a.length-1].scrollIntoView({block:'center'});a[a.length-1].focus()}}
 function calc(){
 var c=S.c,r=N(S.rec.rinde),ingT=0;
 S.lines.forEach(function(l){ingT+=lineCost(l)});
@@ -387,7 +465,7 @@ P.emp=r>0?N(c.emp)/r:0;P.env=r>0?N(c.env)/r:0;P.fij=r>0?N(c.fij)/r:0;
 var costo=P.ing+P.lab+P.en+P.emp+P.env+P.fij;
 var com=N(c.com)/100,mar=N(c.mar)/100,iva=N(c.iva)/100,den=1-com-mar,pv=den>0?costo/den:NaN;
 var err='';
-if(r<=0)err='Indique las unidades que rinde la receta (paso 2).';
+if(r<=0)err='Indique las unidades que rinde la receta (paso 1).';
 else if(!isFinite(pv))err='La comisión y la ganancia suman 100 % o más. Reduzca alguna para calcular el precio.';
 else if(costo<=0)err='No hay costos registrados. Complete los pasos anteriores.';
 return{ingT:ingT,P:P,costo:costo,com:com,iva:iva,pv:pv,err:err,r:r,un:un,T:{ing:ingT,lab:lab,en:en,emp:N(c.emp),env:N(c.env),fij:N(c.fij)}}}
@@ -404,8 +482,8 @@ var P=R.P,pv=R.pv,cm=pv*R.com,gan=pv-R.costo-cm,tax=pv*R.iva,fin=pv+tax,nm=S.rec
 var T=R.T,tt=T.ing+T.lab+T.en+T.emp+T.env+T.fij,pk=Math.floor(N((curProd()||{}).pack)),wn=[];
 var zero=S.lines.filter(function(l){return lineCost(l)<=0}).length;
 if(!S.lines.length)wn.push('La receta no tiene ingredientes: el costo de ingredientes es cero.');
-if(zero)wn.push(zero+' ingrediente(s) de la receta cuestan cero (falta cantidad, precio o unidad). Revise los pasos 1 y 2.');
-if(R.r===1)wn.push('La tanda rinde 1 unidad: todo el costo de la tanda se carga a una sola unidad. Si produce varias, corríjalo en el paso 2.');
+if(zero)wn.push(zero+' ingrediente(s) de la receta cuestan cero (falta cantidad, precio o unidad). Revise las cantidades en el paso 2 y los precios en el Inventario.');
+if(R.r===1)wn.push('La tanda rinde 1 unidad: todo el costo de la tanda se carga a una sola unidad. Si produce varias, corríjalo en el paso 1.');
 if(pk>1&&R.r<pk)wn.push('La tanda rinde '+R.r+' unidades, menos que el paquete de '+pk+'.');
 var wh=wn.map(function(m){return '<div class="warn">'+m+'</div>'}).join('');
 var comp=[['Ingredientes',T.ing,'#3b82f6'],['Mano de obra',T.lab,'#22d3ee'],['Gas, luz o agua',T.en,'#f59e0b'],['Empaque',T.emp,'#a78bfa'],['Envío',T.env,'#f472b6'],['Otros gastos',T.fij,'#94a3b8']];
@@ -426,7 +504,7 @@ window.scrollTo(0,0)}
 function showView(v){
 if(v!=='prod')dropDrafts();
 document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='view-'+v)});
-if(v==='sub')renderSubs();if(v==='fact')window.dispatchEvent(new Event('factopen'));
+if(v==='sub')renderSubs();if(v==='inv'){openInv=null;$('invQ').value='';invLimit=25;renderIngs()}if(v==='stk'){openStk=null;renderStk()}if(v==='fact')window.dispatchEvent(new Event('factopen'));
 if(v==='prod')showList();
 try{S.view=v;save()}catch(e){}
 window.scrollTo(0,0)}
@@ -441,50 +519,67 @@ else if(k==='subin'){subp(t.dataset.sid).ins[t.dataset.id][f]=t.value}
 else if(k==='lines'){S.lines[t.dataset.id][f]=t.value}
 else if(k==='root'){S[f]=f==='mon'?cleanMon(t.value):t.value}
 else S[k][f]=t.value}
-document.addEventListener('input',function(e){var t=e.target;if(!t.dataset||!t.dataset.k)return;setVal(t);save();refresh()});
+document.addEventListener('input',function(e){var t=e.target;if(t.dataset&&t.dataset.pq){pprev(t.dataset.pq);return}if(!t.dataset||!t.dataset.k)return;setVal(t);save();refresh()});
 document.addEventListener('change',function(e){var t=e.target;
 if(t.tagName!=='SELECT'||t.dataset.k==null)return;
 if(t.dataset.k==='lines'&&t.dataset.f==='i'){var it=item(t.value);if(it)S.lines[t.dataset.id].u=it.u;renderLines()}
 else if(t.dataset.k==='ings'&&t.dataset.f==='u'){fixLines();refresh()}
 else if(t.dataset.k==='subs'&&t.dataset.f==='yu'){fixLines();refresh()}
 save()});
+document.addEventListener('change',function(e){var t=e.target;if(!t.dataset||!t.dataset.pimg)return;var f=t.files&&t.files[0],id=t.dataset.pimg;if(!f)return;
+if(f.type&&f.type.indexOf('image/')!==0){t.value='';return toast('Seleccione un archivo de imagen.',1)}
+shrinkImg(f,function(d){if(!d)return toast('No se pudo leer la imagen. Pruebe con otra.',1);var p=null;S.prods.forEach(function(x){if(x.id===id)p=x});if(!p)return;p.img=d;save();renderStk();toast('Foto guardada')})});
 document.addEventListener('click',function(e){
+if(e.target.id==='pk')return closePk();
 var v=e.target.closest('[data-view]');if(v)return showView(v.dataset.view);
 var t=e.target.closest('button');if(!t)return;
 if(t.id==='pback'){if(editing)showList();else showView('home');return}
 if(t.id==='pnew')return newProd();
-if(t.id==='psave'){var sp=curProd();if(!sp||!(S.rec.n||'').trim()){toast('Escriba el nombre del producto en el paso 2.',1);return go(1)}delete sp.draft;save();showList();toast('Producto guardado');return}
+if(t.id==='psave'){var sp=curProd();if(!sp||!(S.rec.n||'').trim()){toast('Escriba el nombre del producto en el paso 1.',1);return go(0)}delete sp.draft;save();showList();toast('Receta guardada');return}
+if(t.dataset.pimgdel){S.prods.forEach(function(x){if(x.id===t.dataset.pimgdel)delete x.img});save();renderStk();return toast('Foto quitada')}
+if(t.dataset.stkopen){openStk=String(openStk)===t.dataset.stkopen?null:t.dataset.stkopen;renderStk();var q0=document.querySelector('[data-pq]');if(q0)q0.focus();return}
+if(t.dataset.pstep){var pi=t.dataset.pid,q1=document.querySelector('[data-pq="'+pi+'"]');if(q1){q1.value=String(Math.max(0,fx(N(q1.value)+ +t.dataset.pstep)));pprev(pi)}return}
+if(t.dataset.produce)return produce(t.dataset.produce);
 if(t.dataset.popen)return openProd(t.dataset.popen);
 if(t.dataset.pdel){var did=t.dataset.pdel,dp=null;S.prods.forEach(function(x){if(x.id===did)dp=x});if(!dp)return;var emp=!(dp.rec.n||'').trim()&&!(dp.lines&&dp.lines.length);if(!emp&&t.dataset.arm!=='1'){t.dataset.arm='1';t.textContent='Toca otra vez para eliminar';setTimeout(function(){if(t.isConnected){t.dataset.arm='';t.textContent='Eliminar'}},3500);return}if(true){S.prods=S.prods.filter(function(x){return x.id!==did});if(S.cur===did){S.cur=null;S.rec={n:'',rinde:'1'};S.lines=[];S.c=cpNew()}save();renderProdList()}return}
 if(t.dataset.scu!=null){setPack(t.dataset.scu);return}
 if(t.dataset.sell){setSell(t.dataset.sell);return}
+if(t.id==='pkc')return closePk();
+if(t.dataset.pick)return pickItem(t.dataset.pick);
+if(t.dataset.invmore){invLimit+=25;return renderIngs()}
 if(t.dataset.t!=null)return go(+t.dataset.t);
 if(t.dataset.go!=null)return go(+t.dataset.go);
 if(t.dataset.m){S.c.mar=t.dataset.m;$('mar').value=t.dataset.m;save();return refresh()}
 if(t.dataset.addsubin!=null){var s=subp(t.dataset.addsubin);s.ins=s.ins||[];s.ins.push({n:'',c:''});save();return renderSubs()}
 if(t.dataset.delsubin!=null){var s=subp(t.dataset.delsubin);s.ins.splice(+t.dataset.id,1);save();return renderSubs()}
-if(t.dataset.del==='ings'){var id=t.dataset.id;S.ings=S.ings.filter(function(g){return String(g.id)!==String(id)});S.lines=S.lines.filter(function(l){return l.i!=='g'+id});save();return renderIngs()}
-if(t.dataset.del==='subs'){var id2=t.dataset.id;S.subs=S.subs.filter(function(s){return String(s.id)!==String(id2)});S.lines=S.lines.filter(function(l){return l.i!=='s'+id2});save();return renderSubs()}
+if(t.dataset.invopen){openInv=t.dataset.invopen;renderIngs();var oc=document.querySelector('#invList .card.hl');if(oc)oc.scrollIntoView({block:'nearest'});return}
+if(t.dataset.invclose){openInv=null;return renderIngs()}
+if(t.dataset.del==='ings'){var id=t.dataset.id,g0=ing(id),us=S.prods.filter(function(p){return p.lines.some(function(l){return l.i==='g'+id})}).length;if(!confirm('¿Eliminar "'+((g0&&g0.n)||'este ingrediente')+'" del inventario?'+(us?' También se quitará de '+us+' receta'+(us===1?'':'s')+'.':'')))return;if(String(openInv)===String(id))openInv=null;dropRef('g'+id);S.ings=S.ings.filter(function(g){return String(g.id)!==String(id)});save();return renderIngs()}
+if(t.dataset.del==='subs'){var id2=t.dataset.id,s0=subp(id2);if(!confirm('¿Eliminar el subproducto "'+((s0&&s0.n)||'sin nombre')+'"? También se quitará de las recetas que lo usan.'))return;dropRef('s'+id2);S.subs=S.subs.filter(function(s){return String(s.id)!==String(id2)});save();return renderSubs()}
 if(t.dataset.del==='lines'){S.lines.splice(+t.dataset.id,1);save();return renderLines()}
 });
-$('addIng').onclick=function(){S.ings.push({id:++S.nid,n:'',p:'',q:'',u:'kg',m:'0'});save();renderIngs();var a=document.querySelectorAll('#ingList [data-f="n"]');a[a.length-1].focus()};
+$('addInv').onclick=function(){$('invQ').value='';invLimit=25;S.ings.push({id:++S.nid,n:'',p:'',q:'',u:'kg',m:'0'});openInv=S.nid;save();renderIngs();var a=document.querySelector('#invList [data-f="n"]');if(a){a.scrollIntoView({block:'center'});a.focus()}};
+$('invQ').addEventListener('input',function(){invLimit=25;renderIngs()});
+$('pkq').addEventListener('input',drawPk);
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closePk()});
 $('addSub').onclick=function(){S.subs.push({id:++S.sid,n:'',ins:[{n:'',c:''}],min:'',hora:'',en:'',yq:'',yu:'kg'});save();renderSubs();var a=document.querySelectorAll('#subList [data-f="n"][data-k="subs"]');a[a.length-1].focus()};
-$('addLine').onclick=function(){var it=S.ings[0]?'g'+S.ings[0].id:(S.subs[0]?'s'+S.subs[0].id:'');var g=item(it);S.lines.push({i:it,q:'',u:g?g.u:'g'});save();renderLines()};
+$('addLine').onclick=openPk;
 $('reset').onclick=function(){if(confirm('¿Iniciar un producto en blanco? Se eliminarán los ingredientes y la receta actuales. Los subproductos se conservan.')){S=blank();save();fill();renderIngs();renderLines();go(0)}};
 load();fill();renderIngs();renderLines();
 showView(S.view||'home');
 if(window.Sync)Sync.pull(KEY,function(){load();fill();renderIngs();renderSubs();renderLines();renderProdList();refresh();window.dispatchEvent(new Event('factopen'))});
 /* Interfaz de consulta para Facturación: expone los productos con receta completa y su precio por unidad. */
+window.stockOut=function(a){try{a.forEach(function(x){S.prods.forEach(function(p){if(p.id===x.id)p.stock=Math.max(0,fx(N(p.stock)-x.q))})});save()}catch(e){}};
 window.getSellables=function(){var o=[];(S.prods||[]).forEach(function(p){if(p.draft)return;var n=(p.rec.n||'').trim(),w=uRaw(p),u=Math.round(w*100)/100;if(n&&u>0)o.push({id:p.id,n:n,u:u,w:w,pack:Math.floor(N(p.pack))>1?Math.floor(N(p.pack)):0})});return o};
 </script>
 <script>
 (function(){
 var KEY='facturacion-rd-v1',$=function(i){return document.getElementById(i)};
-var S={biz:{n:'',t:'',d:''},cols:32,dens:1,seq:1,inv:[]},D=[],cur=null,from='nueva',busy=false,PR={dev:null,chr:null,all:false};
+var S={biz:{n:'',t:'',d:''},cols:32,dens:1,seq:1,inv:[]},D=[],cur=null,from='nueva',busy=false,PR={dev:null,chr:null};
 var SVC='0000ff00-0000-1000-8000-00805f9b34fb',CHR='0000ff02-0000-1000-8000-00805f9b34fb';
 var FONT='ui-monospace,Menlo,Consolas,monospace';
 /* Filtros de búsqueda Bluetooth: impresoras térmicas Phomemo (servicio ff00 o nombre conocido). */
-var BT_FILTERS=[{services:[SVC]},{namePrefix:'T02'},{namePrefix:'Phomemo'},{namePrefix:'Mr.in'},{namePrefix:'M02'},{namePrefix:'M110'},{namePrefix:'M120'},{namePrefix:'M220'},{namePrefix:'D30'}];
+var BT_FILTERS=[{services:[SVC]},{namePrefix:'T02'},{namePrefix:'Phomemo'},{namePrefix:'Mr.in'},{namePrefix:'M02'},{namePrefix:'M110'},{namePrefix:'M120'},{namePrefix:'M220'},{namePrefix:'D30'},{namePrefix:'Printer'},{namePrefix:'Thermal'},{namePrefix:'POS'}];
 
 function load(){try{var t=localStorage.getItem(KEY);if(t){var o=JSON.parse(t);if(o&&Array.isArray(o.inv)){var mx=0;o.inv.forEach(function(v){if(+v.no>mx)mx=+v.no});S={biz:{n:(o.biz&&o.biz.n)||'',t:(o.biz&&o.biz.t)||'',d:(o.biz&&o.biz.d)||''},cols:o.cols===48?48:32,dens:(o.dens===0||o.dens===2)?o.dens:1,seq:Math.max(+o.seq||1,mx+1),inv:o.inv}}}}catch(e){}}
 function save(){try{var t=JSON.stringify(S);localStorage.setItem(KEY,t);if(window.Sync)Sync.put(KEY,t)}catch(e){}}
@@ -514,11 +609,11 @@ function drawItems(){var A=prods();
  D.forEach(function(l){if(l.k&&l.k!=='@'&&!info(l,A).ok){l.k='';l.m='u'}});
  $('fitems').innerHTML=D.map(function(l,x){var i=info(l,A),pr=i.pr;
   var h='<div class="card fl"><div class="top"><label>Producto<select data-fk="'+x+'">'+optsHtml(l.k,A)+'</select></label><button class="x" type="button" data-fdel="'+x+'" aria-label="Quitar producto">✕</button></div>';
-  if(l.k==='@')h+='<div class="g2"><label>Descripción<input data-ff="d" data-fx="'+x+'" value="'+esc(l.d)+'" placeholder="Producto"></label><label>Precio (RD$)<input data-ff="p" data-fx="'+x+'" type="number" inputmode="decimal" min="0" step="any" value="'+esc(l.p)+'"></label></div>';
+  if(l.k==='@')h+='<div class="g2"><label>Descripción<input data-ff="d" data-fx="'+x+'" value="'+esc(l.d)+'" placeholder="Producto"></label><label>Precio (RD$)<input data-ff="p" data-fx="'+x+'" type="text" data-num inputmode="decimal" min="0" step="any" value="'+esc(l.p)+'"></label></div>';
   if(l.k){var hasPk=pr&&pr.pack>1;
    h+='<div class="g2" style="margin:0'+(hasPk?'':';grid-template-columns:1fr')+'">'+
    (hasPk?'<label>Vender por<select data-fm="'+x+'"><option value="u"'+(l.m!=='p'?' selected':'')+'>Unidades</option><option value="p"'+(l.m==='p'?' selected':'')+'>Paquete de '+pr.pack+'</option></select></label>':'')+
-   '<div class="lb"><span>'+(l.m==='p'&&hasPk?'Cantidad de paquetes':'Cantidad')+'</span><div class="stp"><button type="button" data-fstep="-1" data-fx="'+x+'" aria-label="Menos">−</button><input data-ff="q" data-fx="'+x+'" type="number" inputmode="decimal" min="0" step="any" value="'+esc(l.q)+'" aria-label="Cantidad"><button type="button" data-fstep="1" data-fx="'+x+'" aria-label="Más">+</button></div></div></div>'+
+   '<div class="lb"><span>'+(l.m==='p'&&hasPk?'Cantidad de paquetes':'Cantidad')+'</span><div class="stp"><button type="button" data-fstep="-1" data-fx="'+x+'" aria-label="Menos">−</button><input data-ff="q" data-fx="'+x+'" type="text" data-num inputmode="decimal" min="0" step="any" value="'+esc(l.q)+'" aria-label="Cantidad"><button type="button" data-fstep="1" data-fx="'+x+'" aria-label="Más">+</button></div></div></div>'+
    '<div class="lc" style="margin-top:10px"><span>Precio <b data-fpr="'+x+'"></b></span><span>Total <b data-flt="'+x+'"></b></span></div>'}
   return h+'</div>'}).join('')+(A.length?'':'<div class="empty">No hay productos con receta completa. Cree productos en el módulo Productos para que aparezcan aquí con su precio. También puede utilizar la opción "Otro (manual)".</div>');
  upd()}
@@ -561,15 +656,15 @@ function raster(cv){var w=cv.width,h=cv.height,wb=Math.ceil(w/8),d=cv.getContext
  for(var y=0;y<h;y++)for(var x=0;x<w;x++){var i=(y*w+x)*4;if(.299*d[i]+.587*d[i+1]+.114*d[i+2]<195)o[y*wb+(x>>3)]|=0x80>>(x&7)}
  for(var k=0;k<o.length;k++)if(o[k]===0x0a)o[k]=0x14;
  return{wb:wb,h:h,data:o}}
-async function btConnect(){
+async function btConnect(stage){
  if(PR.chr&&PR.dev&&PR.dev.gatt&&PR.dev.gatt.connected)return PR.chr;
- if(!PR.dev){PR.dev=await navigator.bluetooth.requestDevice(PR.all?{acceptAllDevices:true,optionalServices:[SVC]}:{filters:BT_FILTERS,optionalServices:[SVC]});PR.dev.addEventListener('gattserverdisconnected',function(){PR.chr=null})}
- try{var srv=await PR.dev.gatt.connect(),sv=await srv.getPrimaryService(SVC);PR.chr=await sv.getCharacteristic(CHR);return PR.chr}
+ if(!PR.dev){stage('pick');PR.dev=await navigator.bluetooth.requestDevice({filters:BT_FILTERS,optionalServices:[SVC]});PR.dev.addEventListener('gattserverdisconnected',function(){PR.chr=null})}
+ try{stage('connect');var srv=await PR.dev.gatt.connect();stage('service');var sv=await srv.getPrimaryService(SVC);stage('char');PR.chr=await sv.getCharacteristic(CHR);return PR.chr}
  catch(e){PR.dev=null;PR.chr=null;throw e}}
 async function btWrite(chr,bytes){for(var i=0;i<bytes.length;i+=128){var p=bytes.slice(i,i+128);if(chr.writeValueWithoutResponse)await chr.writeValueWithoutResponse(p);else await chr.writeValue(p);await sleep(15)}}
-async function printBT(v){if(busy||!v)return;busy=true;var b=$('fimg');b.disabled=true;
- try{setSt('Conectando con la impresora. Si se solicita, seleccione el dispositivo en la lista.');
-  var chr=await btConnect();setSt('Imprimiendo…');
+async function printBT(v){if(busy||!v)return;busy=true;var b=$('fimg'),st='pick';b.disabled=true;
+ try{setSt(PR.dev?'Conectando con la impresora…':'Buscando impresoras Bluetooth. Seleccione la suya en la lista.');
+  var chr=await btConnect(function(x){st=x});st='print';setSt('Imprimiendo…');
   var R=raster(renderCanvas(v,32,1,true)),BL=24;
   await btWrite(chr,new Uint8Array([0x1b,0x40]));
   if(S.dens)await btWrite(chr,new Uint8Array([0x1b,0x4e,0x0d,S.dens===2?2:3,0x1b,0x4e,0x04,S.dens===2?15:12]));
@@ -578,11 +673,14 @@ async function printBT(v){if(busy||!v)return;busy=true;var b=$('fimg');b.disable
    await btWrite(chr,blk);await sleep(110);setSt('Imprimiendo… '+Math.min(100,Math.round((y+n)/R.h*100))+' %')}
   await btWrite(chr,new Uint8Array([0x1b,0x4a,0x60]));
   setSt('Factura enviada a la impresora.','ok')}
- catch(e){var m=(e&&(e.name+' '+e.message))||'';
-  if(/NotFound/i.test(e&&e.name)&&/chosen|cancel|selected|found/i.test(m)){PR.all=true;setSt('No se seleccionó ninguna impresora. Toque Imprimir para ver todos los dispositivos Bluetooth.','bad')}
-  else if(/policy|security|not allowed|disallowed|permission/i.test(m)){setSt('El navegador no permite Bluetooth en esta página. Envíe la imagen a la app de la impresora.','bad');toImage(v,2,preview)}
-  else if(/GATT|Network|disconnected|connect/i.test(m))setSt('No fue posible conectar con la impresora. Verifique que esté encendida y cerca, e intente nuevamente.','bad');
-  else setSt('No fue posible imprimir ('+(e&&e.message?e.message:'error desconocido')+').','bad')}
+ catch(e){var nm=(e&&e.name)||'',m=nm+' '+((e&&e.message)||'');
+  if(st==='pick'){
+   if(/NotFound/i.test(nm)){setSt('No se seleccionó ninguna impresora. Verifique que esté encendida, cerca del teléfono y con Bluetooth activado. Toque Imprimir para buscar de nuevo; solo se mostrarán impresoras compatibles.','bad')}
+   else if(/policy|security|not allowed|disallowed|permission|gesture/i.test(m)){setSt('El navegador no permitió abrir la búsqueda Bluetooth. Use Chrome, permita «Dispositivos cercanos» y ubicación, y toque Imprimir de nuevo. También puede enviar la imagen a la app de la impresora.','bad');toImage(v,2,preview)}
+   else setSt('No fue posible buscar impresoras ('+(e&&e.message?e.message:'error desconocido')+').','bad')}
+  else if(st==='service'||st==='char'){setSt('La impresora seleccionada no es compatible. Toque Imprimir y elija una impresora térmica compatible (por ejemplo, T02).','bad')}
+  else if(st==='connect')setSt('No fue posible conectar con la impresora. Verifique que esté encendida, cerca del teléfono y sin conexión a otra aplicación (solo admite una conexión a la vez), e intente nuevamente.','bad');
+  else setSt('Se interrumpió la impresión ('+(e&&e.message?e.message:'error desconocido')+'). Toque Imprimir para reintentar.','bad')}
  b.disabled=false;busy=false}
 function printNow(v){if(btOK())printBT(v);else{setSt('Este navegador no permite imprimir directamente. Envíe la imagen a la app de la impresora.','bad');shareImage(v,preview)}}
 
@@ -594,7 +692,7 @@ function drawHist(){var q=$('fq').value.trim().toLowerCase(),tot=0;S.inv.forEach
  $('fhtot').textContent='RD$ '+n2(tot);$('fhsub').textContent=S.inv.length+' factura'+(S.inv.length===1?'':'s')+' guardada'+(S.inv.length===1?'':'s');
  var l=S.inv.filter(function(v){return !q||(v.cli||'').toLowerCase().indexOf(q)>=0||String(v.no).indexOf(q)>=0}).slice().reverse(),more=false;
  more=l.length>200;l=l.slice(0,200);$('fhl').innerHTML=l.length?l.map(function(v){return '<button class="hi" type="button" data-fopen="'+esc(v.no)+'"><span>#'+String(v.no).padStart(4,'0')+' · '+esc(v.cli||'Sin nombre')+'<small>'+esc(v.fecha)+' · '+esc(v.pago)+'</small></span><b>RD$ '+n2(calc(v.items,v.env,v.des,v.itb).tot)+'</b></button>'}).join('')+(more?'<div class="empty">Se muestran las 200 más recientes. Use el buscador.</div>':''):'<div class="empty">No hay facturas registradas.</div>'}
-function show(v,f){cur=v;from=f;$('frc').innerHTML=html(v);$('fdel').style.display=f==='hist'?'':'none';setSt('');tab('ver')}
+function show(v,f){cur=v;from=f;$('frc').innerHTML=html(v);$('fdel').style.display=f==='hist'?'':'none';setSt(btOK()?'Toque Imprimir para elegir su impresora Bluetooth en la lista de dispositivos.':'');tab('ver')}
 function phone(t){var d=String(t||'').replace(/\D/g,'');return d.length===10?'1'+d:d}
 
 /* ---------- Eventos ---------- */
@@ -614,9 +712,10 @@ document.addEventListener('click',function(e){var b=e.target.closest('button');i
 $('faddIt').onclick=function(){D.push(newLine());drawItems();var a=document.querySelectorAll('#fitems select[data-fk]'),l=a[a.length-1];if(l){l.scrollIntoView({block:'center'})}};
 $('fgen').onclick=function(){var it=draftItems();
  if(!it.length){alert('Agregue al menos un producto con cantidad y precio.');return}
+ try{var SA=prods(),SO=[];D.forEach(function(l){var i=info(l,SA);if(l.k&&l.k!=='@'&&i.ok&&i.pr)SO.push({id:i.pr.id,q:l.m==='p'&&i.pr.pack>1?N(l.q)*i.pr.pack:N(l.q)})});if(window.stockOut)window.stockOut(SO)}catch(e){}
  var v={no:S.seq++,fecha:new Date().toLocaleString('es-DO',{dateStyle:'short',timeStyle:'short'}),cli:$('fcli').value.trim(),tel:$('ftel').value.trim(),items:it,env:$('fenv').value,des:$('fdes').value,itb:$('fitb').value==='1',pago:$('fpago').value,nota:$('fnota').value.trim()};
  S.inv.push(v);save();D=[newLine()];['fcli','ftel','fenv','fdes','fnota'].forEach(function(i){$(i).value=''});$('fitb').value='0';drawItems();
- show(v,'nueva');printNow(v)};
+ show(v,'nueva')};
 $('fbk').onclick=function(){tab(from)};
 $('fwa').onclick=function(){if(!cur)return;var v=cur;shareImage(v,function(b,f){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;document.body.appendChild(a);a.click();a.remove();setSt('Imagen guardada. Se abrirá WhatsApp para que la adjunte.','ok');window.open('https://wa.me/'+phone(v.tel),'_blank')})};
 $('fimg').onclick=function(){printNow(cur)};
@@ -628,10 +727,10 @@ load();fillAj();D=[newLine()];drawItems();
 if(window.Sync)Sync.pull(KEY,function(){load();fillAj();drawHist()});
 })();
 </script>
-<script>(function(){document.querySelectorAll('[data-tip]').forEach(function(t){var k='costeo_tip_'+t.dataset.tip,seen=false;try{seen=localStorage.getItem(k)==='1'}catch(e){}if(seen)return;t.hidden=false;t.querySelector('button').onclick=function(){t.hidden=true;try{localStorage.setItem(k,'1')}catch(e){}}})})();</script>
+<script>(function(){document.querySelectorAll('[data-tip]').forEach(function(t){var k='costeo_tip3_'+t.dataset.tip,seen=false;try{seen=localStorage.getItem(k)==='1'}catch(e){}if(seen)return;t.hidden=false;t.querySelector('button').onclick=function(){t.hidden=true;try{localStorage.setItem(k,'1')}catch(e){}}})})();</script>
 <div id="tour" role="dialog" aria-modal="true"><div class="bx"><div class="ti" id="tti"></div><h2 id="ttt"></h2><p id="ttp"></p><div class="dt" id="tdt"></div><div class="bt"><button type="button" id="tsk">Omitir</button><button type="button" class="pri" id="tnx">Siguiente</button></div></div></div>
 <script>
-(function(){var K='costeo_tour_v1',T=[['👋','Bienvenido a Costeo de recetas','Esta aplicación calcula cuánto le cuesta producir algo y a qué precio debe venderlo para ganar lo que desea.'],['📦','Productos','Registre sus productos con sus ingredientes, la receta y los costos de operación. La app le dice el costo por unidad y el precio de venta.'],['🧪','Subproductos','Cree preparaciones propias, como masa, salsa o crema, para usarlas como ingrediente dentro de sus productos.'],['🧾','Facturación','Haga facturas de los productos que ya tiene calculados, imprímalas o envíelas por WhatsApp.']],i=0,el=document.getElementById('tour');
+(function(){var K='costeo_tour_v4',T=[['Introducción','Costeo de recetas','Herramienta para determinar el costo de producción, el precio de venta y las existencias de su negocio. El flujo de trabajo es: registrar los insumos, elaborar las recetas, registrar la producción y facturar.'],['Módulo 1 de 5','Inventario','Controle lo que compra y lo que tiene disponible. Cada insumo muestra su existencia y le avisa cuando está por agotarse.'],['Módulo 2 de 5','Recetas','Defina el producto y el rendimiento de la tanda, y agregue los insumos desde el inventario indicando la cantidad utilizada. El sistema calcula el costo por unidad y el precio de venta según el margen deseado.'],['Módulo 3 de 5','Subproductos','Registre preparaciones intermedias, como masas o salsas, para incorporarlas como insumo en distintas recetas.'],['Módulo 4 de 5','Productos','Consulte las unidades disponibles y registre cada producción. Al confirmarla, el sistema suma las unidades al stock y descuenta los insumos del inventario. Puede asociar una fotografía a cada producto.'],['Módulo 5 de 5','Facturación','Emita comprobantes de los productos disponibles, con impresión o envío por WhatsApp. Cada factura descuenta automáticamente las unidades vendidas.']],i=0,el=document.getElementById('tour');
 function done(){el.style.display='none';try{localStorage.setItem(K,'1')}catch(e){}}
 function draw(){var t=T[i];document.getElementById('tti').textContent=t[0];document.getElementById('ttt').textContent=t[1];document.getElementById('ttp').textContent=t[2];document.getElementById('tdt').innerHTML=T.map(function(x,j){return '<i'+(j===i?' class="on"':'')+'></i>'}).join('');document.getElementById('tnx').textContent=i===T.length-1?'Comenzar':'Siguiente'}
 document.getElementById('tnx').onclick=function(){if(i>=T.length-1)done();else{i++;draw()}};document.getElementById('tsk').onclick=done;
