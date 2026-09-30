@@ -422,6 +422,10 @@ function reg(u){
 function setProfilePhoto(url){if(!profileImg)return;var has=!!String(url||'').trim();profileImg.onerror=function(){profileImg.style.display='none';if(bt)bt.classList.add('fc-no-photo');};if(has){if(bt)bt.classList.remove('fc-no-photo');profileImg.style.display='block';profileImg.src=String(url);profileImg.alt='Foto de perfil';}else{profileImg.removeAttribute('src');profileImg.style.display='none';if(bt)bt.classList.add('fc-no-photo');profileImg.alt='Perfil';}}
 window.FC={updateBusiness:function(data){return B('').update(data)},toast:tt};
 function showProfile(){
+ // Al abrir Perfil/Ajustes dejamos de estar en Home: el avatar pasa a la barra inferior
+ // y la barra se mantiene visible para que Perfil se comporte como una sección normal.
+ if(typeof placeAccountButton==='function')placeAccountButton('profile');
+ var dock=document.getElementById('dock');if(dock)dock.classList.remove('off');
  var b=S.biz||{},u=S.currentUser||{},isOwner=S.owner;
  var avatar=u.photoURL||S.photoURL||'';
  var head='<div class="fc-inline"><div class="fc-user-head"><'+(avatar?'img':'div')+' class="fc-photo'+(avatar?'':' fc-photo-fallback')+'" '+(avatar?'src="'+esc(avatar)+'" alt="Foto de perfil"':'aria-hidden="true"')+'></'+(avatar?'img':'div')+'><div><div class="fc-user-name">'+esc(S.userName||u.displayName||S.mail)+'</div><div class="fc-user-email">'+esc(S.mail)+(isOwner?' · Propietario':'')+'</div></div></div></div>';
@@ -446,7 +450,14 @@ function showProfile(){
  ul.onchange=function(e){var t=e.target;if(!t.dataset.fu)return;var m=t.dataset.fm,k=t.dataset.fk,u={};u['perm.'+m+'.'+k]=t.checked;if(k==='e'&&t.checked)u['perm.'+m+'.v']=true;if(k==='v'&&!t.checked)u['perm.'+m+'.e']=false;B('miembros/'+t.dataset.fu).update(u)};
  ul.onclick=function(e){var q=e.target.dataset&&e.target.dataset.fq;if(!q||!confirm('¿Quitar a '+q+'?'))return;var w=db.batch();w.delete(B('miembros/'+q));w.delete(db.doc('accesos/'+q));w.commit()};
 }
-function closeProfile(){P.style.display='none';if(psub){psub();psub=null}}
+function closeProfile(){
+ P.style.display='none';
+ if(psub){psub();psub=null}
+ // Al cerrar Perfil/Ajustes, el avatar vuelve a seguir exactamente la sección actual.
+ var v=document.querySelector('.view.on');v=v?v.id.replace('view-',''):'home';
+ if(typeof placeAccountButton==='function')placeAccountButton(v);
+ var dock=document.getElementById('dock');if(dock)dock.classList.toggle('off',v==='home');
+}
 function enter(bid){
  S.bid=bid;G.style.display='none';
  var u=S.currentUser||{},migrationStarted=false;S.photoURL=u.photoURL||S.photoURL||'';setProfilePhoto(S.photoURL);
