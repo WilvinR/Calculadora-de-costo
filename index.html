@@ -436,12 +436,25 @@ function migrateLegacyData(bid){
 }
 
 /* ---------- Permisos en pantalla ---------- */
-var W=/guardar|nuevo|nueva|agregar|añadir|eliminar|borrar|duplicar|producir|facturar|emitir|anular|generar|ajust|importar|restaurar|limpiar|reiniciar|crear|registrar|vender|[+−]/i,OK=/imprimir|whatsapp|compartir/i;
+var W=/guardar|nuevo|nueva|agregar|añadir|eliminar|borrar|duplicar|producir|facturar|emitir|anular|generar|exportar|descargar|pdf|imprimir|whatsapp|compartir|ajust|importar|restaurar|limpiar|reiniciar|crear|registrar|vender|[+−]/i,OK=/(?!)/;
 document.addEventListener('click',function(e){
  var b=e.target.closest&&e.target.closest('button');if(!b||!b.closest('.view.ro'))return;
  var t=b.textContent+' '+(b.getAttribute('aria-label')||'')+' '+(b.title||'');
- if(W.test(t)&&!OK.test(t)){e.stopPropagation();e.preventDefault();tt('Solo lectura: no tienes permiso de edición')}
+ if((W.test(t)&&!OK.test(t))||/^(invPdf|histPdf)$/.test(b.id)){e.stopPropagation();e.preventDefault();tt('Solo lectura: no tienes permiso de edición')}
 },true);
+var KEEPQ=/^(invQ|fq|pkq)$/,lkT=0;
+function lockRO(){
+ document.querySelectorAll('.view.ro :is(input,select,textarea)').forEach(function(el){
+  if(KEEPQ.test(el.id)||el.type==='search')return;
+  if(!el.dataset.fcLk){el.dataset.fcLk='1';el.dataset.fcWas=el.disabled?'1':'0'}
+  el.disabled=true;
+ });
+ document.querySelectorAll('.view:not(.ro) [data-fc-lk]').forEach(function(el){
+  if(el.dataset.fcWas!=='1')el.disabled=false;
+  delete el.dataset.fcLk;delete el.dataset.fcWas;
+ });
+}
+new MutationObserver(function(){cancelAnimationFrame(lkT);lkT=requestAnimationFrame(lockRO)}).observe(document.documentElement,{childList:true,subtree:true});
 function home(){var h=$('#dock [data-view="home"]');if(h)h.click()}
 function apply(){
  Object.keys(M).forEach(function(m){
@@ -452,6 +465,7 @@ function apply(){
  });
  var hv=document.getElementById('view-home'),nn=document.getElementById('fc-noperm'),any=S.owner||Object.keys(M).some(function(m){return can(m,'v')});
  if(hv){if(!any){if(!nn){nn=document.createElement('div');nn.id='fc-noperm';nn.style.cssText='margin:18px 14px;padding:16px;border:1px solid var(--ln);border-radius:18px;background:rgba(255,255,255,.04);color:var(--mu);text-align:center;font-size:.92rem;line-height:1.5';nn.innerHTML='<b style="color:#fff">Aún no tienes permisos</b><br>El propietario del negocio debe activarte los módulos. Cuando lo haga, aparecerán aquí automáticamente.';hv.appendChild(nn)}}else if(nn)nn.remove()}
+ lockRO();
  var ab=$('#fc-btn');if(ab)ab.style.display='grid';
 }
 
