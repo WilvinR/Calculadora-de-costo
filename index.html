@@ -311,13 +311,13 @@ function put(key,t){
    if(!can('fact','e'))return;
    var o=JSON.parse(t),inv=o.inv||[],m=Object.assign({},o);delete m.inv;delete m.biz;
    var mj=JSON.stringify(m);
-   if(mj!==L.fm){L.fm=mj;B('datos/fact').set({json:mj,by:by,byName:byName,at:TS()});}
+   if(mj!==L.fm){L.fm=mj;B('datos/fact').set({json:mj,by:by,byName:byName,at:TS()}).catch(function(e){L.fm='';console.error('datos/fact',e);tt('No se pudo guardar la numeración ('+((e&&e.code)||'error')+')')});}
    var seen={};
    inv.forEach(function(v){
     var id=String(v.no),j=JSON.stringify(v);seen[id]=1;
-    if(L.f[id]!==j){L.f[id]=j;B('facturas/'+id).set({json:j,no:+v.no||0,by:by,byName:byName,at:TS()});}
+    if(L.f[id]!==j){var prev=L.f[id];L.f[id]=j;B('facturas/'+id).set({json:j,no:+v.no||0,by:by,byName:byName,at:TS()}).catch(function(e){console.error('Factura',id,e);if(L.f[id]===j){if(prev===undefined)delete L.f[id];else L.f[id]=prev}tt('No se pudo guardar la factura #'+id+' en el historial ('+((e&&e.code)||'error')+')')});}
    });
-   Object.keys(L.f).forEach(function(id){if(!seen[id]){delete L.f[id];B('facturas/'+id).delete();}});
+   Object.keys(L.f).forEach(function(id){if(!seen[id]){delete L.f[id];B('facturas/'+id).delete().catch(function(e){console.error('Borrar factura',id,e);tt('No se pudo borrar la factura #'+id+' ('+((e&&e.code)||'error')+')')});}});
   }
  }catch(e){console.error('Sync error',e)}
 }
