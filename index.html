@@ -416,7 +416,7 @@ function listen(){
  }
 }
 function clearLegacyBrowserData(){
- try{localStorage.removeItem(K.rec);localStorage.removeItem(K.fact);localStorage.removeItem('fc_bid');localStorage.removeItem('costeo_tour_v5');}catch(e){}
+ try{localStorage.removeItem(K.rec);localStorage.removeItem(K.fact);localStorage.removeItem('fc_bid');}catch(e){}
 }
 function migrateLegacyData(bid){
  var oldRec=null,oldFact=null;
@@ -518,11 +518,12 @@ function showProfile(){
   h+='<h3>Usuarios</h3><div id="fc-ul"></div><button class="pri fc-primary" id="fc-open-add" type="button">+ Agregar nuevo usuario</button><div id="fc-add-box" class="fc-add-box" hidden>'+F('Nombre del usuario','nu')+F('Correo de Google','ne','email')+'<div class="fc-profile-actions"><button id="fc-cancel-add" type="button">Cancelar</button><button class="pri" id="fc-add" type="button">Agregar usuario</button></div></div>';
  }
  if(isOwner)h+='<h3>Impresión</h3><div class="fc-form-grid"><label>Ancho del papel<select id="fc-paper"><option value="32"'+((b.paperWidth||32)==32?' selected':'')+'>58 mm</option><option value="48"'+((b.paperWidth||32)==48?' selected':'')+'>80 mm</option></select></label><label>Intensidad<select id="fc-density"><option value="0"'+((b.printDensity??1)==0?' selected':'')+'>Normal</option><option value="1"'+((b.printDensity??1)==1?' selected':'')+'>Fuerte</option><option value="2"'+((b.printDensity??1)==2?' selected':'')+'>Máxima</option></select></label></div>';
- h+='<p><button id="fc-out" type="button" class="fc-danger">Cerrar sesión</button></p>';
+ h+='<p><button id="fc-tut" type="button">Ver tutoriales de nuevo</button></p><p><button id="fc-out" type="button" class="fc-danger">Cerrar sesión</button></p>';
  P.innerHTML='<div>'+h+'</div>';P.style.display='flex';
  if(isOwner){$('#fc-sb').onclick=function(){var n=val('pn').trim();if(!n){tt('Falta el nombre del negocio');return}B('').update({n:n,t:val('pt'),c:val('pc'),rnc:val('pr'),dir:val('pd')}).then(function(){tt('Datos del negocio guardados')}).catch(function(){tt('No se pudo guardar')})};
  $('#fc-paper').onchange=function(){B('').update({paperWidth:+this.value}).then(function(){tt('Ancho guardado')})};
  $('#fc-density').onchange=function(){B('').update({printDensity:+this.value}).then(function(){tt('Intensidad guardada')})};}
+ $('#fc-tut').onclick=function(){try{Object.keys(localStorage).forEach(function(k){if(k==='costeo_tour_v5'||k.indexOf('costeo_tip3_')===0)localStorage.removeItem(k)})}catch(e){}location.reload()};
  $('#fc-out').onclick=out;
  if(!isOwner)return;
  var box=$('#fc-add-box');$('#fc-open-add').onclick=function(){box.hidden=false;$('#fc-open-add').hidden=true;$('#fc-nu').focus()};$('#fc-cancel-add').onclick=function(){box.hidden=true;$('#fc-open-add').hidden=false};
