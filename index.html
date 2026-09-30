@@ -278,7 +278,7 @@ var C={apiKey:"AIzaSyDsSaCINNFev01GW9NqIWxxPemk_HsQumQ",authDomain:"foodcost-rd.
 if(!window.firebase){window.Sync={put:function(){},pull:function(){}};return}
 firebase.initializeApp(C);
 var auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-db.enablePersistence({synchronizeTabs:true}).catch(function(){});
+// Datos de negocio: Firestore es la fuente única. No se usa persistencia offline de Firestore.
 var M={fact:['Facturación','💵'],stk:['Productos','🏷️'],prod:['Recetas','🧾'],inv:['Inventario','📦']};
 var K={rec:'costeo_recetas_v3',fact:'facturacion-rd-v1'};
 var S={bid:null,mail:'',userName:'',perm:{},owner:false,biz:{}},pulls={},subs=[],dsubs=[],L={f:{}},pj='',psub=null,authIntent='login';
@@ -292,54 +292,85 @@ function pm(v){var p={};Object.keys(M).forEach(function(m){p[m]={v:v,e:v}});retu
 function cj(x){return JSON.stringify(x,function(k,v){if(v&&typeof v==='object'&&!Array.isArray(v)){var r={};Object.keys(v).sort().forEach(function(z){r[z]=v[z]});return r}return v})}
 function tt(m){var d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000d;color:#fff;padding:10px 16px;border-radius:20px;z-index:10000;font-size:14px';document.body.appendChild(d);setTimeout(function(){d.remove()},2200)}
 
-/* ---------- Sincronización (ganchos que ya usa la app) ---------- */
+/* ---------- Sincronización: Firestore es la fuente única ---------- */
 function put(key,t){
- if(!S.bid)return;var by=S.mail,byName=S.userName||S.mail;
+ if(!S.bid)return;
+ var by=S.mail,byName=S.userName||S.mail;
  try{
   if(key===K.rec){
    if(!any(['prod','stk','inv'],'e')||t===L.rec)return;
-   L.rec=t;B('datos/costeo').set({json:t,by:by,at:TS()});
+   L.rec=t;
+   B('datos/costeo').set({json:t,by:by,byName:byName,at:TS()});
   }else if(key===K.fact){
    if(!can('fact','e'))return;
    var o=JSON.parse(t),inv=o.inv||[],m=Object.assign({},o);delete m.inv;delete m.biz;
    var mj=JSON.stringify(m);
-   if(mj!==L.fm){L.fm=mj;B('datos/fact').set({json:mj,by:by,at:TS()})}
+   if(mj!==L.fm){L.fm=mj;B('datos/fact').set({json:mj,by:by,byName:byName,at:TS()});}
    var seen={};
-   inv.forEach(function(v){var id=String(v.no),j=JSON.stringify(v);seen[id]=1;if(L.f[id]!==j){L.f[id]=j;B('facturas/'+id).set({json:j,no:+v.no||0,by:by,byName:byName,at:TS()})}});
-   Object.keys(L.f).forEach(function(id){if(!seen[id]){delete L.f[id];B('facturas/'+id).delete()}});
+   inv.forEach(function(v){
+    var id=String(v.no),j=JSON.stringify(v);seen[id]=1;
+    if(L.f[id]!==j){L.f[id]=j;B('facturas/'+id).set({json:j,no:+v.no||0,by:by,byName:byName,at:TS()});}
+   });
+   Object.keys(L.f).forEach(function(id){if(!seen[id]){delete L.f[id];B('facturas/'+id).delete();}});
   }
- }catch(e){}
+ }catch(e){console.error('Sync error',e)}
 }
 window.Sync={put:put,pull:function(k,cb){pulls[k]=cb}};
-function fire(k){if(pulls[k])try{pulls[k]()}catch(e){}}
+function fire(k){if(pulls[k])try{pulls[k]()}catch(e){console.error(e)}}
 function bizFact(){var b=S.biz||{};return{n:b.n||'',t:b.t||'',d:[b.rnc?'RNC: '+b.rnc:'',b.dir||''].filter(Boolean).join(' · ')}}
 function rebuild(){
- if(!L.fmeta||!L.fi)return;
- var loc={};try{loc=JSON.parse(localStorage.getItem(K.fact))||{}}catch(e){}
- var a=loc.inv||[],desc=a.length>1&&+a[0].no>+a[a.length-1].no;
- var inv=Object.keys(L.fi).map(function(i){var x=L.fi[i],v=x;try{v=JSON.parse(x.json)}catch(e){v={}};if(x.byName)v.creadoPor=x.byName;if(x.by)v.creadoPorEmail=x.by;return v}).sort(function(x,y){return desc?y.no-x.no:x.no-y.no});
+ if(!L.fmeta) L.fmeta={};
+ var inv=Object.keys(L.fi||{}).map(function(i){
+  var x=L.fi[i],v={};try{v=JSON.parse(x.json)}catch(e){}
+  if(x.byName)v.creadoPor=x.byName;
+  if(x.by)v.creadoPorEmail=x.by;
+  return v;
+ }).filter(function(v){return v&&v.no!=null}).sort(function(x,y){return (+x.no||0)-(+y.no||0)});
  var o=Object.assign({},L.fmeta,{inv:inv,biz:bizFact()});
- if(cj(o)!==cj(loc)){localStorage.setItem(K.fact,JSON.stringify(o));fire(K.fact)}
+ window.__fcCloudFact=JSON.stringify(o);
+ fire(K.fact);
 }
 function listen(){
- dsubs.forEach(function(f){f()});dsubs=[];var er=function(){};
+ dsubs.forEach(function(f){try{f()}catch(e){}});dsubs=[];var er=function(e){console.error(e)};
  if(any(['prod','stk','inv'],'v'))dsubs.push(B('datos/costeo').onSnapshot(function(s){
   if(s.metadata.hasPendingWrites)return;
-  if(!s.exists){var l=localStorage.getItem(K.rec);if(l)put(K.rec,l);return}
-  var j=s.data().json;L.rec=j;
-  if(localStorage.getItem(K.rec)!==j){localStorage.setItem(K.rec,j);fire(K.rec)}
+  window.__fcCloudRec=s.exists?(s.data().json||''):'';
+  L.rec=window.__fcCloudRec;
+  fire(K.rec);
  },er));
  if(can('fact','v')){
   dsubs.push(B('datos/fact').onSnapshot(function(s){
    if(s.metadata.hasPendingWrites)return;
-   if(!s.exists){var l=localStorage.getItem(K.fact);if(l&&can('fact','e'))put(K.fact,l);return}
-   L.fm=s.data().json;try{L.fmeta=JSON.parse(L.fm)}catch(e){L.fmeta={}}rebuild();
+   L.fm=s.exists?(s.data().json||''):'';
+   try{L.fmeta=L.fm?JSON.parse(L.fm):{}}catch(e){L.fmeta={}}
+   rebuild();
   },er));
   dsubs.push(B('facturas').onSnapshot(function(q){
    if(q.metadata.hasPendingWrites)return;
-   L.f={};L.fi={};q.forEach(function(d){var x=d.data();L.f[d.id]=x.json;try{L.fi[d.id]=JSON.parse(x.json)}catch(e){}});rebuild();
+   L.f={};L.fi={};
+   q.forEach(function(d){var x=d.data();L.f[d.id]=x.json;L.fi[d.id]=x;});
+   rebuild();
   },er));
  }
+}
+function clearLegacyBrowserData(){
+ try{localStorage.removeItem(K.rec);localStorage.removeItem(K.fact);localStorage.removeItem('fc_bid');localStorage.removeItem('costeo_tour_v5');}catch(e){}
+}
+function migrateLegacyData(bid){
+ var oldRec=null,oldFact=null;
+ try{oldRec=localStorage.getItem(K.rec);oldFact=localStorage.getItem(K.fact)}catch(e){}
+ return Promise.all([B('datos/costeo').get(),B('datos/fact').get()]).then(function(ds){
+  var jobs=[];
+  if(!ds[0].exists&&oldRec&&any(['prod','stk','inv'],'e')){L.rec=oldRec;jobs.push(B('datos/costeo').set({json:oldRec,by:S.mail,byName:S.userName||S.mail,at:TS()}));}
+  if(!ds[1].exists&&oldFact&&can('fact','e')){
+   try{
+    var o=JSON.parse(oldFact),inv=o.inv||[],m=Object.assign({},o);delete m.inv;delete m.biz;L.fm=JSON.stringify(m);
+    jobs.push(B('datos/fact').set({json:L.fm,by:S.mail,byName:S.userName||S.mail,at:TS()}));
+    var seen={};inv.forEach(function(v){var id=String(v.no);seen[id]=1;var j=JSON.stringify(v);jobs.push(B('facturas/'+id).set({json:j,no:+v.no||0,by:S.mail,byName:S.userName||S.mail,at:TS()}));});
+   }catch(e){console.error('Legacy parse',e)}
+  }
+  return Promise.all(jobs).then(function(){clearLegacyBrowserData();});
+ }).catch(function(e){console.error('Legacy migration',e);});
 }
 
 /* ---------- Permisos en pantalla ---------- */
@@ -357,104 +388,83 @@ function apply(){
   var sec=document.getElementById('view-'+m);
   if(sec){sec.classList.toggle('ro',v&&!e);if(!v&&sec.classList.contains('on'))home()}
  });
- ['fbn','fbt','fbd'].forEach(function(i){var x=document.getElementById(i);if(x){x.readOnly=true;x.title='Se edita en Mi negocio'}});
- $('#fc-btn').style.display='block';
+ var ab=$('#fc-dock-account')||$('#fc-btn');if(ab)ab.style.display='flex';
 }
 
-/* ---------- Pantallas: acceso y registro ---------- */
+/* ---------- Pantallas: acceso, registro y cuenta ---------- */
 var st=document.createElement('style');
-st.textContent='.ro :is(input,select,textarea):not(#invQ){pointer-events:none;opacity:.75}#fc-btn{display:none;position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;z-index:60;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:rgba(12,18,32,.78);color:var(--tx);font-size:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 8px 24px rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}.fc-o{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:rgba(0,0,0,.70);color:var(--tx);font:16px Manrope,system-ui,sans-serif;overflow:auto;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.fc-o>div{max-width:430px;width:100%;padding:28px 22px;border:1px solid rgba(34,216,255,.22);border-radius:28px;background:linear-gradient(160deg,rgba(20,30,52,.92),rgba(6,10,18,.96));box-shadow:0 0 60px rgba(47,123,255,.24),inset 0 1px 0 rgba(255,255,255,.12)}.fc-o h1,.fc-o h2,.fc-o h3{font-family:Sora,Manrope,sans-serif;color:#fff}.fc-o h1{font-size:clamp(2.2rem,11vw,3.4rem);letter-spacing:-.04em;line-height:1;margin:4px 0 10px}.fc-o h1 span{background:linear-gradient(120deg,#2f7bff,#22d8ff 60%,#8ff0ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}.fc-o p{color:var(--mu);margin:8px 0 16px}.fc-o label{display:grid;gap:5px;margin:10px 0;text-align:left;font-size:.78rem;color:var(--mu)}.fc-o input:not([type=checkbox]){width:100%;padding:11px 12px;box-sizing:border-box;color:var(--tx);background:rgba(0,0,0,.55);border:1px solid var(--ln);border-radius:14px;font:inherit}.fc-o input:not([type=checkbox]):focus{outline:none;border-color:var(--cy);box-shadow:0 0 0 3px rgba(34,216,255,.18)}.fc-o button{padding:12px 14px;margin:5px 0;width:100%}.fc-auth-logo{width:72px;height:72px;display:block;margin:0 auto 14px;filter:drop-shadow(0 0 18px rgba(34,216,255,.38))}.fc-auth-sub{font-family:Sora,Manrope,sans-serif;color:var(--cy)!important;font-weight:600;letter-spacing:.10em}';
+st.textContent='.ro :is(input,select,textarea):not(#invQ){pointer-events:none;opacity:.75}'+
+'.fc-o{position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 18px) 14px calc(env(safe-area-inset-bottom,0px) + 90px);background:rgba(0,0,0,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:var(--tx);font:16px Manrope,system-ui,sans-serif;overflow:auto}'+
+'.fc-o>div{max-width:560px;width:100%;background:linear-gradient(160deg,rgba(20,30,52,.96),rgba(6,10,18,.98));border:1px solid rgba(34,216,255,.24);border-radius:26px;padding:22px 18px;box-shadow:0 0 60px rgba(47,123,255,.2),inset 0 1px 0 rgba(255,255,255,.1)}'+
+'.fc-o h1,.fc-o h2,.fc-o h3{font-family:Sora,Manrope,sans-serif}.fc-o h2{font-size:1.55rem;margin:0 0 8px}.fc-o h3{font-size:1.15rem;margin:22px 0 10px}.fc-o label{display:grid;gap:5px;margin:11px 0;text-align:left;color:var(--mu);font-size:.82rem}.fc-o input:not([type=checkbox]){width:100%;padding:12px;border-radius:14px;box-sizing:border-box}.fc-o button{padding:11px 14px;margin:5px 0}.fc-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fc-form-grid label{margin:0}.fc-primary{width:100%;padding:14px!important}.fc-user-card{border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:12px;margin:9px 0;background:rgba(255,255,255,.035)}.fc-user-head{display:flex;gap:10px;align-items:center}.fc-user-name{font-weight:800;color:#fff}.fc-user-email{font-size:.78rem;color:var(--mu)}.fc-perm{margin-top:10px;display:grid;gap:7px}.fc-perm-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;color:var(--mu);font-size:.8rem}.fc-perm-row label{display:flex;align-items:center;gap:5px;margin:0}.fc-perm-row input{width:auto}.fc-add-box{margin-top:10px;padding-top:10px;border-top:1px solid var(--ln)}.fc-profile-actions{display:flex;gap:8px;justify-content:flex-end}.fc-profile-actions button{flex:1}.fc-auth-logo{margin:2px auto 14px;width:76px;height:76px}.fc-photo{width:48px;height:48px;border-radius:50%;object-fit:cover;display:block;flex:none;background:linear-gradient(135deg,#2f7bff,#19d9ff);border:2px solid rgba(255,255,255,.35);box-shadow:0 0 18px rgba(34,216,255,.28)}.fc-photo-fallback{display:grid;place-items:center;color:#00121f;font-weight:900}.fc-account{width:42px!important;height:42px!important;padding:0!important;overflow:hidden;flex:none}.fc-account .fc-photo{width:100%;height:100%;border:0;box-shadow:none}.fc-account .dl{max-width:84px!important}.fc-account.fc-no-photo::before{content:"👤";font-size:1.25rem;line-height:1}.fc-biz-note{font-size:.82rem;color:var(--mu);margin:0 0 14px}.fc-inline{display:flex;gap:8px;align-items:center;justify-content:space-between}.fc-muted{color:var(--mu);font-size:.8rem}.fc-danger{color:#ffb4b4!important}'+
+'@media(max-width:520px){.fc-form-grid{grid-template-columns:1fr}.fc-o{padding-left:10px;padding-right:10px}.fc-o>div{padding:20px 14px;border-radius:22px}.fc-perm-row{grid-template-columns:1fr auto auto}}';
 document.documentElement.appendChild(st);
-var G=document.createElement('div');G.className='fc-o';G.style.alignItems='center';document.documentElement.appendChild(G);
-var bt=document.createElement('button');bt.id='fc-btn';bt.type='button';bt.textContent='👤';bt.setAttribute('aria-label','Cuenta');document.documentElement.appendChild(bt);
+var G=document.createElement('div');G.className='fc-o';G.style.display='none';document.documentElement.appendChild(G);
+var P=document.createElement('div');P.className='fc-o';P.style.display='none';P.style.zIndex='14';document.documentElement.appendChild(P);
+var bt=document.createElement('button');bt.id='fc-btn';bt.type='button';bt.className='fc-account';bt.setAttribute('aria-label','Mi cuenta');
+var profileImg=document.createElement('img');profileImg.className='fc-photo';profileImg.alt='Foto de perfil';bt.appendChild(profileImg);
+function attachAccountToDock(){var dockAccount=document.getElementById('fc-dock-account');if(dockAccount){profileImg=dockAccount.querySelector('img')||profileImg;bt=dockAccount;bt.className='fc-account';bt.id='fc-dock-account';setProfilePhoto(S.photoURL||'');bt.onclick=function(){if(P.style.display==='flex')closeProfile();else showProfile()};}}
+document.addEventListener('DOMContentLoaded',attachAccountToDock);
 function gate(h){G.style.display='flex';G.innerHTML='<div style="text-align:center">'+h+'</div>'}
 function F(l,id,t,v){return '<label>'+l+'<input id="fc-'+id+'" type="'+(t||'text')+'" value="'+esc(v||'')+'"></label>'}
-function google(mode,u){
- authIntent=mode||'login';
- if(u){if(authIntent==='register')reg(u);else login();return}
- var p=new firebase.auth.GoogleAuthProvider();
- auth.signInWithPopup(p).catch(function(e){
-  if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')auth.signInWithRedirect(p);
-  else login('No se pudo continuar con Google. Intenta de nuevo.');
- });
-}
+function google(mode){authIntent=mode||'login';var p=new firebase.auth.GoogleAuthProvider();auth.signInWithPopup(p).catch(function(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')auth.signInWithRedirect(p);else login('No se pudo continuar con Google. Intenta de nuevo.')})}
 function login(msg){
- gate('<div style="max-width:380px;margin:auto;text-align:center"><svg class="fc-auth-logo" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="fcAuthLg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f7bff"/><stop offset="1" stop-color="#22d8ff"/></linearGradient></defs><rect x="4" y="4" width="88" height="88" rx="28" fill="rgba(255,255,255,.05)" stroke="url(#fcAuthLg)" stroke-width="2"/><circle cx="48" cy="50" r="22" fill="none" stroke="url(#fcAuthLg)" stroke-width="3"/><rect x="37" y="52" width="7" height="10" rx="3.5" fill="url(#fcAuthLg)"/><rect x="46" y="45" width="7" height="17" rx="3.5" fill="url(#fcAuthLg)"/><rect x="55" y="37" width="7" height="25" rx="3.5" fill="url(#fcAuthLg)"/><path d="M69 18l2.2 5.8L77 26l-5.8 2.2L69 34l-2.2-5.8L61 26l5.8-2.2z" fill="#8ff0ff"/></svg><h1>FoodCost <span>RD</span></h1><p class="fc-auth-sub">Calcula. Produce. Vende.</p>'+(msg?'<p style="color:#ff9b9b">'+esc(msg)+'</p>':'')+
- '<p>Tu cuenta de Google debe estar asociada a un negocio para entrar.</p>'+
- '<button class="pri" id="fc-g" type="button" style="padding:14px">Iniciar sesión con Google</button>'+
- '<button id="fc-rg" type="button" style="padding:14px">Registrar mi compañía con Google</button></div>');
- $('#fc-g').onclick=function(){google('login')};
- $('#fc-rg').onclick=function(){google('register')};
+ gate('<div style="max-width:400px;margin:auto"><svg class="fc-auth-logo" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="fclg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f7bff"/><stop offset="1" stop-color="#22d8ff"/></linearGradient></defs><rect x="4" y="4" width="88" height="88" rx="28" fill="rgba(255,255,255,.05)" stroke="url(#fclg)" stroke-width="2"/><circle cx="48" cy="50" r="22" fill="none" stroke="url(#fclg)" stroke-width="3"/><rect x="37" y="52" width="7" height="10" rx="3" fill="url(#fclg)"/><rect x="46" y="45" width="7" height="17" rx="3" fill="url(#fclg)"/><rect x="55" y="37" width="7" height="25" rx="3" fill="url(#fclg)"/></svg><h1>FoodCost <span style="color:#22d8ff">RD</span></h1><p class="slogan">Calcula. Produce. Vende.</p>'+(msg?'<p style="color:#ffb4b4">'+esc(msg)+'</p>':'')+'<p class="fc-biz-note">Para entrar, tu cuenta de Google debe estar asociada a un negocio.</p><button class="pri fc-primary" id="fc-g" type="button">Iniciar sesión con Google</button><button id="fc-rg" type="button" class="fc-primary">Registrar mi compañía con Google</button></div>');
+ $('#fc-g').onclick=function(){google('login')};$('#fc-rg').onclick=function(){google('register')};
 }
 function reg(u){
- gate('<div style="max-width:400px;margin:auto"><h2>Registrar mi compañía</h2><p>Primero asociamos tu cuenta de Google a tu negocio. Estos datos aparecerán en tus facturas.</p>'+F('Tu nombre','rnuser','text',u.displayName||'')+F('Nombre del negocio','rn')+F('Teléfono','rt','tel')+F('Correo de contacto','rc','email',u.email)+F('RNC / Cédula (opcional)','rr')+F('Dirección (opcional)','rd')+
- '<button class="pri" id="fc-r" type="button" style="width:100%;padding:14px">Crear mi compañía</button>'+
- '<p style="font-size:13px;color:#93a4bd">Si ya perteneces a un negocio, usa «Iniciar sesión con Google».</p><button id="fc-o" type="button">Cerrar sesión</button></div>');
+ gate('<div><h2>Registrar mi compañía</h2><p class="fc-biz-note">Estos serán los mismos datos que aparecerán en Facturación y quedarán guardados en Firebase.</p>'+F('Tu nombre','rnuser','text',u.displayName||'')+F('Nombre del negocio','rn')+F('Teléfono / WhatsApp','rt','tel')+F('Correo de contacto','rc','email',u.email)+F('RNC / Cédula (opcional)','rr')+F('Dirección / Instagram (opcional)','rd')+'<button class="pri fc-primary" id="fc-r" type="button">Crear mi compañía</button><p class="fc-muted">Si ya perteneces a un negocio, vuelve y utiliza «Iniciar sesión con Google».</p><button id="fc-o" type="button">Cerrar sesión</button></div>');
  $('#fc-o').onclick=out;
- $('#fc-r').onclick=function(){
-  var un=val('rnuser'),n=val('rn');if(!un){tt('Escribe tu nombre');return}if(!n){tt('Escribe el nombre del negocio');return}
-  var b=db.batch(),uid=u.uid;
-  b.set(db.doc('negocios/'+uid),{owner:uid,ownerMail:S.mail,ownerName:un,n:n,t:val('rt'),c:val('rc'),rnc:val('rr'),dir:val('rd'),at:TS()});
-  b.set(db.doc('negocios/'+uid+'/miembros/'+S.mail),{uid:uid,email:S.mail,nombre:un,rol:'propietario',perm:pm(true),at:TS()});
-  b.set(db.doc('accesos/'+S.mail),{bid:uid});
-  b.commit().then(function(){S.userName=un;enter(uid)}).catch(function(e){tt('No se pudo registrar. Revisa tu conexión.')});
- };
+ $('#fc-r').onclick=function(){var un=val('rnuser').trim(),n=val('rn').trim();if(!un){tt('Escribe tu nombre');return}if(!n){tt('Escribe el nombre del negocio');return}var uid=u.uid,bid=uid,b=db.batch();var biz={owner:uid,ownerMail:S.mail,ownerName:un,n:n,t:val('rt'),c:val('rc'),rnc:val('rr'),dir:val('rd'),paperWidth:32,printDensity:1,at:TS()};b.set(db.doc('negocios/'+bid),biz);b.set(db.doc('negocios/'+bid+'/miembros/'+S.mail),{uid:uid,email:S.mail,nombre:un,photoURL:u.photoURL||'',rol:'propietario',perm:pm(true),at:TS()});b.set(db.doc('accesos/'+S.mail),{bid:bid});b.commit().then(function(){S.userName=un;S.photoURL=u.photoURL||'';enter(bid)}).catch(function(){tt('No se pudo registrar. Revisa tu conexión.')});};
 }
-function enter(bid){
- var prev=localStorage.getItem('fc_bid');
- if(prev!==bid){localStorage.setItem('fc_bid',bid);if(prev){localStorage.removeItem(K.rec);localStorage.removeItem(K.fact);location.reload();return}}
- S.bid=bid;G.style.display='none';
- subs.push(B('miembros/'+S.mail).onSnapshot(function(s){
-  if(!s.exists){alert('Tu acceso a este negocio fue removido.');out();return}
-  var d=s.data(),j=cj(d.perm||{});S.perm=d.perm||{};S.owner=d.rol==='propietario';S.userName=d.nombre||S.userName||S.biz.ownerName||S.mail;
-  if(j!==pj){pj=j;listen()}apply();
- },function(){}));
- subs.push(B('').onSnapshot(function(s){S.biz=s.data()||{};rebuild();apply()},function(){}));
-}
-function out(){
- subs.concat(dsubs).forEach(function(f){try{f()}catch(e){}});
- [K.rec,K.fact,'fc_bid'].forEach(function(k){localStorage.removeItem(k)});
- auth.signOut().then(function(){location.reload()});
-}
-
-/* ---------- Panel: cuenta, Mi negocio y Usuarios ---------- */
-var P=document.createElement('div');P.className='fc-o';P.style.display='none';document.documentElement.appendChild(P);
-function closeP(){P.style.display='none';if(psub){psub();psub=null}}
-bt.onclick=function(){
- var b=S.biz||{},h='<h2>'+esc(b.n||'Mi negocio')+'</h2><p>'+esc(S.userName||S.mail)+' · '+esc(S.mail)+(S.owner?' · Propietario':'')+'</p>';
- if(S.owner)h+='<h3>Datos del negocio</h3>'+F('Nombre','pn','text',b.n)+F('Teléfono','pt','tel',b.t)+F('Correo','pc','email',b.c)+F('RNC / Cédula','pr','text',b.rnc)+F('Dirección','pd','text',b.dir)+'<button class="pri" id="fc-sb" type="button">Guardar datos</button><h3>Usuarios</h3><div id="fc-ul"></div>'+F('Nombre del usuario','nu')+F('Correo de Google','ne','email')+'<button class="pri" id="fc-add" type="button">Agregar usuario</button>';
- h+='<p><button id="fc-x" type="button">Cerrar</button> <button id="fc-out" type="button">Cerrar sesión</button></p>';
+function setProfilePhoto(url){if(!profileImg)return;profileImg.src=url||'';profileImg.style.display=url?'block':'none';if(bt)bt.classList.toggle('fc-no-photo',!url);if(!url){profileImg.removeAttribute('src');profileImg.alt='Perfil';}}
+window.FC={updateBusiness:function(data){return B('').update(data)},toast:tt};
+function showProfile(){
+ var b=S.biz||{},u=S.currentUser||{},isOwner=S.owner;
+ var avatar=u.photoURL||S.photoURL||'';
+ var head='<div class="fc-inline"><div class="fc-user-head"><'+(avatar?'img':'div')+' class="fc-photo'+(avatar?'':' fc-photo-fallback')+'" '+(avatar?'src="'+esc(avatar)+'" alt="Foto de perfil"':'aria-hidden="true"')+'></'+(avatar?'img':'div')+'><div><div class="fc-user-name">'+esc(S.userName||u.displayName||S.mail)+'</div><div class="fc-user-email">'+esc(S.mail)+(isOwner?' · Propietario':'')+'</div></div></div></div>';
+ var h=head;
+ h+='<h3>Datos del negocio</h3><p class="fc-biz-note">Estos son los datos oficiales del negocio. Se sincronizan con Facturación para todos los usuarios.</p>';
+ h+='<div class="fc-form-grid">'+F('Nombre del negocio','pn','text',b.n)+F('Teléfono / WhatsApp','pt','tel',b.t)+F('Correo de contacto','pc','email',b.c)+F('RNC / Cédula','pr','text',b.rnc)+'</div>'+F('Dirección / Instagram (opcional)','pd','text',b.dir)+'<button class="pri fc-primary" id="fc-sb" type="button">Guardar datos del negocio</button>';
+ if(isOwner){
+  h+='<h3>Usuarios</h3><div id="fc-ul"></div><button class="pri fc-primary" id="fc-open-add" type="button">+ Agregar nuevo usuario</button><div id="fc-add-box" class="fc-add-box" hidden>'+F('Nombre del usuario','nu')+F('Correo de Google','ne','email')+'<div class="fc-profile-actions"><button id="fc-cancel-add" type="button">Cancelar</button><button class="pri" id="fc-add" type="button">Agregar usuario</button></div></div>';
+ }
+ h+='<h3>Impresión</h3><div class="fc-form-grid"><label>Ancho del papel<select id="fc-paper"><option value="32"'+((b.paperWidth||32)==32?' selected':'')+'>58 mm</option><option value="48"'+((b.paperWidth||32)==48?' selected':'')+'>80 mm</option></select></label><label>Intensidad<select id="fc-density"><option value="0"'+((b.printDensity??1)==0?' selected':'')+'>Normal</option><option value="1"'+((b.printDensity??1)==1?' selected':'')+'>Fuerte</option><option value="2"'+((b.printDensity??1)==2?' selected':'')+'>Máxima</option></select></label></div>';
+ h+='<p><button id="fc-out" type="button" class="fc-danger">Cerrar sesión</button></p>';
  P.innerHTML='<div>'+h+'</div>';P.style.display='flex';
- $('#fc-x').onclick=closeP;$('#fc-out').onclick=out;
- if(!S.owner)return;
- $('#fc-sb').onclick=function(){if(!val('pn')){tt('Falta el nombre');return}B('').update({n:val('pn'),t:val('pt'),c:val('pc'),rnc:val('pr'),dir:val('pd')}).then(function(){tt('Datos guardados')}).catch(function(){tt('No se pudo guardar')})};
- $('#fc-add').onclick=function(){
-  var em=val('ne').toLowerCase(),un=val('nu');if(!un){tt('Escribe el nombre del usuario');return}if(!/^\S+@\S+\.\S+$/.test(em)){tt('Correo no válido');return}
-  if(em===S.mail){tt('Ese correo es el propietario');return}
-  var w=db.batch();w.set(B('miembros/'+em),{uid:null,email:em,nombre:un,rol:'empleado',perm:pm(false),at:TS()});w.set(db.doc('accesos/'+em),{bid:S.bid});
-  w.commit().then(function(){$('#fc-ne').value='';$('#fc-nu').value='';tt('Usuario agregado. Ahora puedes activar sus permisos.')}).catch(function(){tt('No se pudo agregar. Ese correo podría pertenecer a otro negocio.')});
- };
- var ul=$('#fc-ul');
- psub=B('miembros').onSnapshot(function(q){
-  var h='';q.forEach(function(d){
-   var id=d.id,x=d.data(),own=x.rol==='propietario';
-   h+='<div style="border:1px solid #8886;border-radius:12px;padding:10px;margin:8px 0"><b>'+esc(x.nombre||id)+'</b><small style="display:block;color:#93a4bd;margin-top:3px">'+esc(x.email||id)+'</small>'+(own?' <span style="color:#22d8ff">Propietario</span>':'<button data-fq="'+esc(id)+'" style="float:right">Quitar</button>');
-   if(!own)Object.keys(M).forEach(function(m){var p=(x.perm||{})[m]||{};h+='<div>'+M[m][1]+' '+M[m][0]+': '+['v','e'].map(function(k){return '<label style="display:inline"><input type="checkbox" data-fu="'+esc(id)+'" data-fm="'+m+'" data-fk="'+k+'"'+(p[k]?' checked':'')+'> '+(k==='v'?'Ver':'Editar')+'</label>'}).join(' ')+'</div>'});
-   h+='</div>';
-  });ul.innerHTML=h;
- });
+ $('#fc-sb').onclick=function(){var n=val('pn').trim();if(!n){tt('Falta el nombre del negocio');return}B('').update({n:n,t:val('pt'),c:val('pc'),rnc:val('pr'),dir:val('pd')}).then(function(){tt('Datos del negocio guardados')}).catch(function(){tt('No se pudo guardar')})};
+ $('#fc-paper').onchange=function(){B('').update({paperWidth:+this.value}).then(function(){tt('Ancho guardado')})};
+ $('#fc-density').onchange=function(){B('').update({printDensity:+this.value}).then(function(){tt('Intensidad guardada')})};
+ $('#fc-out').onclick=out;
+ if(!isOwner)return;
+ var box=$('#fc-add-box');$('#fc-open-add').onclick=function(){box.hidden=false;$('#fc-open-add').hidden=true;$('#fc-nu').focus()};$('#fc-cancel-add').onclick=function(){box.hidden=true;$('#fc-open-add').hidden=false};
+ $('#fc-add').onclick=function(){var em=val('ne').toLowerCase(),un=val('nu').trim();if(!un){tt('Escribe el nombre del usuario');return}if(!/^\S+@\S+\.\S+$/.test(em)){tt('Correo no válido');return}if(em===S.mail){tt('Ese correo es el propietario');return}var w=db.batch();w.set(B('miembros/'+em),{uid:null,email:em,nombre:un,photoURL:'',rol:'empleado',perm:pm(false),at:TS()});w.set(db.doc('accesos/'+em),{bid:S.bid});w.commit().then(function(){$('#fc-ne').value='';$('#fc-nu').value='';box.hidden=true;$('#fc-open-add').hidden=false;tt('Usuario agregado. Ahora puedes activar sus permisos.')}).catch(function(){tt('No se pudo agregar. Ese correo podría pertenecer a otro negocio.')})};
+ var ul=$('#fc-ul');psub=B('miembros').onSnapshot(function(q){var h='';q.forEach(function(d){var id=d.id,x=d.data(),own=x.rol==='propietario';h+='<div class="fc-user-card"><div class="fc-user-head"><'+(x.photoURL?'img':'div')+' class="fc-photo'+(x.photoURL?'':' fc-photo-fallback')+'" '+(x.photoURL?'src="'+esc(x.photoURL)+'" alt="Foto"':'aria-hidden="true"')+'></'+(x.photoURL?'img':'div')+'><div style="flex:1"><div class="fc-user-name">'+esc(x.nombre||id)+'</div><div class="fc-user-email">'+esc(x.email||id)+'</div></div>'+(own?'<span class="fc-muted">Propietario</span>':'<button data-fq="'+esc(id)+'" type="button">Quitar</button>')+'</div>';
+ if(!own){h+='<div class="fc-perm">';Object.keys(M).forEach(function(m){var pp=(x.perm||{})[m]||{};h+='<div class="fc-perm-row"><span>'+M[m][1]+' '+M[m][0]+'</span><label><input type="checkbox" data-fu="'+esc(id)+'" data-fm="'+m+'" data-fk="v"'+(pp.v?' checked':'')+'> Ver</label><label><input type="checkbox" data-fu="'+esc(id)+'" data-fm="'+m+'" data-fk="e"'+(pp.e?' checked':'')+'> Editar</label></div>'});h+='</div>'}h+='</div>';});ul.innerHTML=h||'<p class="fc-muted">No hay usuarios adicionales.</p>';});
  ul.onchange=function(e){var t=e.target;if(!t.dataset.fu)return;var m=t.dataset.fm,k=t.dataset.fk,u={};u['perm.'+m+'.'+k]=t.checked;if(k==='e'&&t.checked)u['perm.'+m+'.v']=true;if(k==='v'&&!t.checked)u['perm.'+m+'.e']=false;B('miembros/'+t.dataset.fu).update(u)};
  ul.onclick=function(e){var q=e.target.dataset&&e.target.dataset.fq;if(!q||!confirm('¿Quitar a '+q+'?'))return;var w=db.batch();w.delete(B('miembros/'+q));w.delete(db.doc('accesos/'+q));w.commit()};
-};
-
+}
+function closeProfile(){P.style.display='none';if(psub){psub();psub=null}}
+bt.onclick=function(){if(P.style.display==='flex')closeProfile();else showProfile()};
+function enter(bid){
+ S.bid=bid;G.style.display='none';
+ var u=S.currentUser||{},migrationStarted=false;S.photoURL=u.photoURL||S.photoURL||'';setProfilePhoto(S.photoURL);
+ // Always open the application on Home; the current view is never persisted.
+ try{showView('home')}catch(e){}
+ subs.push(B('miembros/'+S.mail).onSnapshot(function(s){
+  if(!s.exists){alert('Tu acceso a este negocio fue removido.');out();return}
+  var d=s.data(),j=cj(d.perm||{});S.perm=d.perm||{};S.owner=d.rol==='propietario';window.__fcOwner=S.owner;S.userName=d.nombre||S.userName||u.displayName||S.mail;S.photoURL=d.photoURL||u.photoURL||'';setProfilePhoto(S.photoURL); if(!S.owner&&(d.uid!==u.uid||d.photoURL!==u.photoURL)){B('miembros/'+S.mail).update({uid:u.uid,photoURL:u.photoURL||''}).catch(function(e){console.error(e)})}
+  if(j!==pj){pj=j;listen()}
+  apply();
+  if(!migrationStarted){migrationStarted=true;migrateLegacyData(bid);}
+ },function(e){console.error(e)}));
+ subs.push(B('').onSnapshot(function(s){S.biz=s.data()||{};window.__fcBiz=S.biz;rebuild();apply();window.dispatchEvent(new Event('fc-biz'));},function(e){console.error(e)}));
+}
+function out(){closeProfile();subs.concat(dsubs).forEach(function(f){try{f()}catch(e){}});subs=[];dsubs=[];clearLegacyBrowserData();auth.signOut().then(function(){location.reload()});}
 auth.onAuthStateChanged(function(u){
- if(!u){S.mail='';S.userName='';login();return}
- S.mail=(u.email||'').toLowerCase();gate('<p>Cargando…</p>');
- db.doc('accesos/'+S.mail).get().then(function(s){
-   if(s.exists){enter(s.data().bid);return}
-   if(authIntent==='register'){reg(u);return}
-   login('Esta cuenta de Google no tiene un negocio asociado. Si eres el propietario, usa «Registrar mi compañía con Google».');
- }).catch(function(){login('No se pudo comprobar tu acceso. Conéctate a Internet e inténtalo de nuevo.')});
+ if(!u){S.mail='';S.userName='';S.currentUser=null;setProfilePhoto('');login();return}
+ S.currentUser=u;S.mail=(u.email||'').toLowerCase();S.photoURL=u.photoURL||'';setProfilePhoto(S.photoURL);gate('<p>Cargando…</p>');
+ db.doc('accesos/'+S.mail).get().then(function(s){if(s.exists){enter(s.data().bid);return}if(authIntent==='register'){reg(u);return}login('Esta cuenta de Google no tiene un negocio asociado. Si eres el propietario, usa «Registrar mi compañía con Google».');}).catch(function(){login('No se pudo comprobar tu acceso. Conéctate a Internet e inténtalo de nuevo.')});
 });
 gate('<p>Cargando…</p>');
 })();
@@ -464,7 +474,7 @@ gate('<p>Cargando…</p>');
 <script>
 /* Campos numéricos: se usan como texto con teclado decimal para evitar dígitos duplicados al minimizar el teclado (Android). */
 document.addEventListener('input',function(e){var t=e.target;if(!t||!t.hasAttribute||!t.hasAttribute('data-num'))return;var v=t.value,c=v.replace(/[^0-9.,]/g,''),i=c.search(/[.,]/);if(i>-1)c=c.slice(0,i+1)+c.slice(i+1).replace(/[.,]/g,'');if(c!==v)t.value=c},true);
-document.addEventListener('DOMContentLoaded',function(){var e=document.querySelectorAll('.syncst');for(var i=0;i<e.length;i++)e[i].textContent='Datos guardados solo en este dispositivo'});
+document.addEventListener('DOMContentLoaded',function(){var e=document.querySelectorAll('.syncst');for(var i=0;i<e.length;i++)e[i].textContent='Datos sincronizados en línea'});
 </script>
 <main>
 
@@ -607,15 +617,21 @@ document.addEventListener('DOMContentLoaded',function(){var e=document.querySele
 </section>
 
 <section class="fp" id="fp-ajustes">
-<p class="lead">Estos datos aparecen en el encabezado de cada factura.</p>
+<p class="lead">Estos son los mismos datos del negocio registrados al crear la compañía. Al cambiarlos aquí se actualizan para todos los usuarios.</p>
 <div class="card">
 <label>Nombre del negocio<input id="fbn" data-fb="n"></label>
 <label style="margin-top:10px">Teléfono / WhatsApp<input id="fbt" data-fb="t"></label>
-<label style="margin-top:10px">Dirección o Instagram (opcional)<input id="fbd" data-fb="d"></label>
-<label style="margin-top:10px">Ancho del papel de tu impresora<select id="fpp"><option value="32">58 mm</option><option value="48">80 mm</option></select></label>
+<label style="margin-top:10px">Correo de contacto<input id="fbc" data-fb="c" type="email"></label>
+<label style="margin-top:10px">RNC / Cédula<input id="fbr" data-fb="rnc"></label>
+<label style="margin-top:10px">Dirección / Instagram (opcional)<input id="fbd" data-fb="d"></label>
+<button class="pri" id="fb-savebiz" type="button" style="width:100%;margin-top:12px">Guardar datos del negocio</button>
+</div>
+<div class="card">
+<h2>Impresión</h2>
+<label>Ancho del papel de tu impresora<select id="fpp"><option value="32">58 mm</option><option value="48">80 mm</option></select></label>
 <label style="margin-top:10px">Intensidad de impresión<select id="fdn"><option value="0">Normal</option><option value="1">Fuerte</option><option value="2">Máxima</option></select></label>
 </div>
-<p class="syncst lead" style="text-align:center"></p><p class="lead">Comprobante simple sin valor fiscal (sin NCF).</p>
+<p class="syncst lead" style="text-align:center">Datos sincronizados en línea</p><p class="lead">Comprobante simple sin valor fiscal (sin NCF).</p>
 </section>
 
 <section class="fp" id="fp-ver">
@@ -630,7 +646,7 @@ document.addEventListener('DOMContentLoaded',function(){var e=document.querySele
 </section>
 </section>
 </main>
-<div id="dock" role="navigation" aria-label="Navegación principal"><button type="button" data-view="home" aria-label="Inicio"><span class="di" aria-hidden="true">🏠</span><span class="dl">Inicio</span></button><button type="button" data-view="fact" aria-label="Facturación"><span class="di" aria-hidden="true">💵</span><span class="dl">Factura</span></button><button type="button" data-view="stk" aria-label="Productos"><span class="di" aria-hidden="true">🏷️</span><span class="dl">Productos</span></button><button type="button" data-view="prod" aria-label="Recetas"><span class="di" aria-hidden="true">🧾</span><span class="dl">Recetas</span></button><button type="button" data-view="inv" aria-label="Inventario"><span class="di" aria-hidden="true">📦</span><span class="dl">Inventario</span></button></div>
+<div id="dock" role="navigation" aria-label="Navegación principal"><button type="button" data-view="home" aria-label="Inicio"><span class="di" aria-hidden="true">🏠</span><span class="dl">Inicio</span></button><button type="button" data-view="fact" aria-label="Facturación"><span class="di" aria-hidden="true">💵</span><span class="dl">Factura</span></button><button type="button" data-view="stk" aria-label="Productos"><span class="di" aria-hidden="true">🏷️</span><span class="dl">Productos</span></button><button type="button" data-view="prod" aria-label="Recetas"><span class="di" aria-hidden="true">🧾</span><span class="dl">Recetas</span></button><button type="button" data-view="inv" aria-label="Inventario"><span class="di" aria-hidden="true">📦</span><span class="dl">Inventario</span></button><button type="button" id="fc-dock-account" aria-label="Mi cuenta" class="fc-account"><img class="fc-photo" alt="Foto de perfil"></button></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="pk" role="dialog" aria-modal="true"><div class="bx"><div class="hd"><h2>Agregar a la receta</h2><button type="button" id="pkc">Cerrar</button></div><input id="pkq" type="search" placeholder="Buscar por nombre…" aria-label="Buscar ingrediente" autocomplete="off"><div id="pkl"></div></div></div>
 <div id="fpv"><img id="fpi" alt="Factura"><p class="lead">Mantenga presionada la imagen para guardarla o compartirla.</p><button id="fpc" type="button">Cerrar</button></div>
@@ -648,8 +664,8 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function cleanMon(v){return String(v==null?'':v).replace(/[<>&"'`\\]/g,'').slice(0,4)}
 function seed(){return{nid:0,mon:'$',ings:[],lines:[],rec:{n:'',rinde:'1'},c:{min:'',hora:'',en:'',emp:'',env:'',fij:'',uni:'',com:'0',mar:'0',iva:'0'}}}
 function blank(){return{nid:0,mon:S?S.mon:'$',ings:[],lines:[],rec:{n:'',rinde:'1'},c:{min:'',hora:'',en:'',emp:'',env:'',fij:'',uni:'',com:'0',mar:'0',iva:'0'}}}
-function load(){try{var t=localStorage.getItem(KEY);S=t?JSON.parse(t):seed();if(!S||!S.ings||!S.lines||!S.c||!S.rec)S=seed()}catch(e){S=seed()}migrate();S.mon=cleanMon(S.mon)||'$'}
-function save(){try{if(S.cur&&S.prods){var p=curProd();if(p){p.rec=S.rec;p.lines=S.lines;p.c=S.c}}var t=JSON.stringify(S);localStorage.setItem(KEY,t);if(window.Sync)Sync.put(KEY,t)}catch(e){}}
+function load(){try{var t=window.__fcCloudRec;S=t?JSON.parse(t):seed();if(!S||!S.ings||!S.lines||!S.c||!S.rec)S=seed()}catch(e){S=seed()}migrate();S.mon=cleanMon(S.mon)||'$'}
+function save(){try{if(S.cur&&S.prods){var p=curProd();if(p){p.rec=S.rec;p.lines=S.lines;p.c=S.c}}var t=JSON.stringify(S);if(window.Sync)Sync.put(KEY,t)}catch(e){}}
 function fmt(v){return S.mon+' '+v.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function opts(sel,fam){var h='';for(var f in FAM){if(fam&&fam!==f)continue;h+='<optgroup label="'+FAM[f]+'">';for(var k in U){if(U[k][1]===f)h+='<option value="'+k+'"'+(k===sel?' selected':'')+'>'+U[k][0]+'</option>'}h+='</optgroup>'}return h}
 function ing(id){for(var i=0;i<S.ings.length;i++)if(String(S.ings[i].id)===String(id))return S.ings[i]}
@@ -840,7 +856,7 @@ if(v!=='prod')dropDrafts();
 document.querySelectorAll('.view').forEach(function(s){s.classList.toggle('on',s.id==='view-'+v)});
 if(v==='inv'){openInv=null;$('invQ').value='';invLimit=25;renderIngs()}if(v==='stk'){openStk=null;renderStk()}if(v==='fact')window.dispatchEvent(new Event('factopen'));
 if(v==='prod')showList();
-try{S.view=v;save()}catch(e){}
+try{S.view='home';delete S.view}catch(e){}
 window.scrollTo(0,0)}
 function fill(){
 $('mon').value=S.mon;$('rn').value=S.rec.n;$('rr').value=S.rec.rinde;
@@ -894,8 +910,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closePk()});
  $('addLine').onclick=openPk;
 $('reset').onclick=function(){if(confirm('¿Iniciar un producto en blanco? Se eliminarán los ingredientes y la receta actuales.')){S=blank();save();fill();renderIngs();renderLines();go(0)}};
 load();fill();renderIngs();renderLines();
-showView(S.view||'home');
-if(window.Sync)Sync.pull(KEY,function(){load();fill();renderIngs();renderLines();renderProdList();refresh();window.dispatchEvent(new Event('factopen'))});
+showView('home');
+if(window.Sync)Sync.pull(KEY,function(){load();fill();renderIngs();renderLines();renderProdList();refresh()});
 /* Interfaz de consulta para Facturación: expone los productos con receta completa y su precio por unidad. */
 window.stockOut=function(a){try{a.forEach(function(x){S.prods.forEach(function(p){if(p.id===x.id)p.stock=Math.max(0,fx(N(p.stock)-x.q))})});save()}catch(e){}};
 window.getSellables=function(){var o=[];(S.prods||[]).forEach(function(p){if(p.draft)return;var n=(p.rec.n||'').trim(),w=uRaw(p),u=Math.round(w*100)/100;if(n&&u>0)o.push({id:p.id,n:n,u:u,w:w,pack:Math.floor(N(p.pack))>1?Math.floor(N(p.pack)):0})});return o};
@@ -909,8 +925,8 @@ var FONT='ui-monospace,Menlo,Consolas,monospace';
 /* Filtros de búsqueda Bluetooth: impresoras térmicas Phomemo (servicio ff00 o nombre conocido). */
 var BT_FILTERS=[{services:[SVC]},{namePrefix:'T02'},{namePrefix:'Phomemo'},{namePrefix:'Mr.in'},{namePrefix:'M02'},{namePrefix:'M110'},{namePrefix:'M120'},{namePrefix:'M220'},{namePrefix:'D30'},{namePrefix:'Printer'},{namePrefix:'Thermal'},{namePrefix:'POS'}];
 
-function load(){try{var t=localStorage.getItem(KEY);if(t){var o=JSON.parse(t);if(o&&Array.isArray(o.inv)){var mx=0;o.inv.forEach(function(v){if(+v.no>mx)mx=+v.no});S={biz:{n:(o.biz&&o.biz.n)||'',t:(o.biz&&o.biz.t)||'',d:(o.biz&&o.biz.d)||''},cols:o.cols===48?48:32,dens:(o.dens===0||o.dens===2)?o.dens:1,seq:Math.max(+o.seq||1,mx+1),inv:o.inv}}}}catch(e){}}
-function save(){try{var t=JSON.stringify(S);localStorage.setItem(KEY,t);if(window.Sync)Sync.put(KEY,t)}catch(e){}}
+function load(){try{var t=window.__fcCloudFact;if(t){var o=JSON.parse(t),inv=Array.isArray(o.inv)?o.inv:[],mx=0;inv.forEach(function(v){if(+v.no>mx)mx=+v.no});S={biz:{n:(o.biz&&o.biz.n)||'',t:(o.biz&&o.biz.t)||'',d:(o.biz&&o.biz.d)||''},cols:o.cols===48?48:32,dens:(o.dens===0||o.dens===2)?o.dens:1,seq:Math.max(+o.seq||1,mx+1),inv:inv}}}catch(e){}}
+function save(){try{if(window.Sync)Sync.put(KEY,JSON.stringify(S))}catch(e){}}
 function N(v){v=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(v)?v:0}
 function r2(v){return Math.round((v+1e-9)*100)/100}
 function n2(v){return v.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -1051,8 +1067,12 @@ $('fimg').onclick=function(){printNow(cur)};
 $('fdel').onclick=function(){if(cur&&confirm('¿Eliminar esta factura del historial?')){S.inv=S.inv.filter(function(i){return i.no!==cur.no});save();tab('hist')}};
 $('fpc').onclick=function(){$('fpv').style.display='none'};
 window.addEventListener('factopen',function(){drawItems()});
-function fillAj(){$('fbn').value=S.biz.n;$('fbt').value=S.biz.t;$('fbd').value=S.biz.d;$('fpp').value=String(S.cols);$('fdn').value=String(S.dens)}
+function fillAj(){var b=window.__fcBiz||{};var owner=window.__fcOwner!==false;S.biz={n:b.n||'',t:b.t||'',d:[b.rnc?'RNC: '+b.rnc:'',b.dir||''].filter(Boolean).join(' · ')};S.cols=b.paperWidth===48?48:32;S.dens=(b.printDensity===0||b.printDensity===2)?b.printDensity:1;$('fbn').value=b.n||'';$('fbt').value=b.t||'';$('fbc').value=b.c||'';$('fbr').value=b.rnc||'';$('fbd').value=b.dir||'';$('fpp').value=String(S.cols);$('fdn').value=String(S.dens);['fbn','fbt','fbc','fbr','fbd'].forEach(function(id){$(id).readOnly=!owner});$('fb-savebiz').style.display=owner?'block':'none';$('fpp').disabled=!owner;$('fdn').disabled=!owner}
 load();fillAj();D=[newLine()];drawItems();
+window.addEventListener('fc-biz',function(){fillAj();drawHist()});
+$('fb-savebiz').onclick=function(){var n=$('fbn').value.trim();if(!n){window.FC.toast('Falta el nombre del negocio');return}window.FC.updateBusiness({n:n,t:$('fbt').value.trim(),c:$('fbc').value.trim(),rnc:$('fbr').value.trim(),dir:$('fbd').value.trim()}).then(function(){window.FC.toast('Datos del negocio guardados')}).catch(function(){window.FC.toast('No se pudo guardar')})};
+$('fpp').onchange=function(){window.FC.updateBusiness({paperWidth:+this.value}).then(function(){window.FC.toast('Ancho guardado')})};
+$('fdn').onchange=function(){window.FC.updateBusiness({printDensity:+this.value}).then(function(){window.FC.toast('Intensidad guardada')})};
 if(window.Sync)Sync.pull(KEY,function(){load();fillAj();drawHist()});
 })();
 </script>
