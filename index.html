@@ -312,15 +312,11 @@ function put(key,t){
    var o=JSON.parse(t),inv=o.inv||[],m=Object.assign({},o);delete m.inv;delete m.biz;
    var mj=JSON.stringify(m);
    if(mj!==L.fm){L.fm=mj;B('datos/fact').set({json:mj,by:by,byName:byName,at:TS()}).catch(function(e){L.fm='';console.error('datos/fact',e);tt('No se pudo guardar la numeración ('+((e&&e.code)||'error')+')')});}
-   var seen={};
-   inv.forEach(function(v){
-    var id=String(v.no),j=JSON.stringify(v);seen[id]=1;
-    if(L.f[id]!==j){var prev=L.f[id];L.f[id]=j;B('facturas/'+id).set({json:j,no:+v.no||0,by:by,byName:byName,at:TS()}).catch(function(e){console.error('Factura',id,e);if(L.f[id]===j){if(prev===undefined)delete L.f[id];else L.f[id]=prev}tt('No se pudo guardar la factura #'+id+' en el historial ('+((e&&e.code)||'error')+')')});}
-   });
-   Object.keys(L.f).forEach(function(id){if(!seen[id]){delete L.f[id];B('facturas/'+id).delete().catch(function(e){console.error('Borrar factura',id,e);tt('No se pudo borrar la factura #'+id+' ('+((e&&e.code)||'error')+')')});}});
+
   }
  }catch(e){console.error('Sync error',e)}
 }
+
 
 /* ---------- Stock seguro para varios usuarios ----------
    El stock ya no se sobrescribe: cada venta/producción registra un DELTA (+/-) y se aplica
@@ -363,15 +359,22 @@ function flushRec(){
  });
 }
 window.addEventListener('online',function(){flushRec()});
-/* Número de factura único (contador atómico) */
-window.fcNextNo=function(localMax){
- if(!S.bid)return Promise.reject(new Error('sin negocio'));
- var ref=B('datos/contador');
- var tr=db.runTransaction(function(tx){return tx.get(ref).then(function(s){
-  var n=Math.max(s.exists?(+s.data().n||0):0,+localMax||0)+1;
-  tx.set(ref,{n:n,by:S.mail,at:TS()});return n;
- })});
- var to=new Promise(function(_,rj){setTimeout(function(){rj(new Error('timeout'))},8000)});
+/* Factura en línea: el número y la factura se guardan en UNA transacción. Si Firestore no la confirma, NO se genera. */
+window.fcCreateInvoice=function(build,localMax){
+ if(!S.bid||!can('fact','e'))return Promise.reject(new Error('Tu usuario no tiene permiso para facturar.'));
+ var cref=B('datos/contador'),v=null;
+ var tr=db.runTransaction(function(tx){return tx.get(cref).then(function(cs){
+  var n=Math.max(cs.exists?(+cs.data().n||0):0,+localMax||0)+1,fref=B('facturas/'+n);
+  return tx.get(fref).then(function(fs){
+   if(fs.exists)throw new Error('El número '+n+' ya existe. Intente de nuevo.');
+   v=build(n);
+   tx.set(cref,{n:n,by:S.mail,at:TS()});
+   tx.set(fref,{json:JSON.stringify(v),no:n,by:S.mail,byName:S.userName||S.mail,at:TS()});
+  });
+ })}).then(function(){
+  var id=String(v.no),j=JSON.stringify(v);L.f[id]=j;L.fi=L.fi||{};L.fi[id]={json:j,by:S.mail,byName:S.userName||S.mail};return v;
+ });
+ var to=new Promise(function(_,rj){setTimeout(function(){rj(new Error('Sin conexión o respuesta muy lenta. La factura NO se generó.'))},15000)});
  return Promise.race([tr,to]);
 };
 window.Sync={put:put,pull:function(k,cb){pulls[k]=cb}};
@@ -433,7 +436,7 @@ function migrateLegacyData(bid){
 }
 
 /* ---------- Permisos en pantalla ---------- */
-var W=/guardar|nuevo|nueva|agregar|añadir|eliminar|borrar|duplicar|producir|facturar|emitir|anular|ajust|importar|restaurar|limpiar|reiniciar|crear|registrar|vender|[+−]/i,OK=/imprimir|whatsapp|compartir/i;
+var W=/guardar|nuevo|nueva|agregar|añadir|eliminar|borrar|duplicar|producir|facturar|emitir|anular|generar|ajust|importar|restaurar|limpiar|reiniciar|crear|registrar|vender|[+−]/i,OK=/imprimir|whatsapp|compartir/i;
 document.addEventListener('click',function(e){
  var b=e.target.closest&&e.target.closest('button');if(!b||!b.closest('.view.ro'))return;
  var t=b.textContent+' '+(b.getAttribute('aria-label')||'')+' '+(b.title||'');
@@ -1137,14 +1140,21 @@ document.addEventListener('click',function(e){var b=e.target.closest('button');i
 $('faddIt').onclick=function(){D.push(newLine());drawItems();var a=document.querySelectorAll('#fitems select[data-fk]'),l=a[a.length-1];if(l){l.scrollIntoView({block:'center'})}};
 $('fgen').onclick=function(){var it=draftItems();
  if(!it.length){alert('Agregue al menos un producto con cantidad y precio.');return}
- var btn=$('fgen');if(btn.disabled)return;btn.disabled=true;
- var go=function(no){btn.disabled=false;
- try{var SA=prods(),SO=[];D.forEach(function(l){var i=info(l,SA);if(l.k&&l.k!=='@'&&i.ok&&i.pr)SO.push({id:i.pr.id,q:l.m==='p'&&i.pr.pack>1?N(l.q)*i.pr.pack:N(l.q)})});if(window.stockOut)window.stockOut(SO)}catch(e){}
- S.seq=Math.max(S.seq,no+1);var v={no:no,fecha:new Date().toLocaleString('es-DO',{dateStyle:'short',timeStyle:'short'}),creadoPor:S.userName||S.mail,creadoPorEmail:S.mail,cli:$('fcli').value.trim(),tel:$('ftel').value.trim(),items:it,env:$('fenv').value,des:$('fdes').value,itb:$('fitb').value==='1',pago:$('fpago').value,nota:$('fnota').value.trim()};
- S.inv.push(v);save();D=[newLine()];['fcli','ftel','fenv','fdes','fnota'].forEach(function(i){$(i).value=''});$('fitb').value='0';drawItems();
- show(v,'nueva')};
+ var btn=$('fgen');if(btn.disabled)return;
+ var SO=[];try{var SA=prods();D.forEach(function(l){var i=info(l,SA);if(l.k&&l.k!=='@'&&i.ok&&i.pr)SO.push({id:i.pr.id,q:l.m==='p'&&i.pr.pack>1?N(l.q)*i.pr.pack:N(l.q)})})}catch(e){}
+ var meta={fecha:new Date().toLocaleString('es-DO',{dateStyle:'short',timeStyle:'short'}),creadoPor:S.userName||S.mail,creadoPorEmail:S.mail,cli:$('fcli').value.trim(),tel:$('ftel').value.trim(),items:it,env:$('fenv').value,des:$('fdes').value,itb:$('fitb').value==='1',pago:$('fpago').value,nota:$('fnota').value.trim()};
  var lm=S.seq-1;S.inv.forEach(function(x){if(+x.no>lm)lm=+x.no});
- (window.fcNextNo?window.fcNextNo(lm):Promise.reject()).then(go,function(){go(S.seq++)})};
+ btn.disabled=true;var old=btn.textContent;btn.textContent='Guardando…';
+ (window.fcCreateInvoice?window.fcCreateInvoice(function(no){return Object.assign({no:no},meta)},lm):Promise.reject(new Error('Sincronización no disponible'))).then(function(v){
+  btn.disabled=false;btn.textContent=old;
+  try{if(window.stockOut)window.stockOut(SO)}catch(e){}
+  S.seq=Math.max(S.seq,v.no+1);S.inv.push(v);save();D=[newLine()];['fcli','ftel','fenv','fdes','fnota'].forEach(function(i){$(i).value=''});$('fitb').value='0';drawItems();
+  show(v,'nueva');
+ },function(e){
+  btn.disabled=false;btn.textContent=old;
+  alert('No se pudo generar la factura: '+((e&&e.code)?e.code+' — ':'')+((e&&e.message)||'error desconocido')+'\nNo se guardó nada. Verifique la conexión e intente de nuevo.');
+ });
+};
 $('fbk').onclick=function(){tab(from)};
 $('fwa').onclick=function(){if(!cur)return;var v=cur;shareImage(v,function(b,f){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;document.body.appendChild(a);a.click();a.remove();setSt('Imagen guardada. Se abrirá WhatsApp para que la adjunte.','ok');window.open('https://wa.me/'+phone(v.tel),'_blank')})};
 $('fimg').onclick=function(){printNow(cur)};
