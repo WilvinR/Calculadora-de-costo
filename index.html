@@ -281,7 +281,7 @@ var auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValu
 db.enablePersistence({synchronizeTabs:true}).catch(function(){});
 var M={fact:['Facturación','💵'],stk:['Productos','🏷️'],prod:['Recetas','🧾'],inv:['Inventario','📦']};
 var K={rec:'costeo_recetas_v3',fact:'facturacion-rd-v1'};
-var S={bid:null,mail:'',perm:{},owner:false,biz:{}},pulls={},subs=[],dsubs=[],L={f:{}},pj='',psub=null;
+var S={bid:null,mail:'',userName:'',perm:{},owner:false,biz:{}},pulls={},subs=[],dsubs=[],L={f:{}},pj='',psub=null,authIntent='login';
 var $=function(s){return document.querySelector(s)};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return'&#'+c.charCodeAt(0)+';'})};
 var can=function(m,k){var p=S.perm[m];return !!(p&&p[k])};
@@ -294,7 +294,7 @@ function tt(m){var d=document.createElement('div');d.textContent=m;d.style.cssTe
 
 /* ---------- Sincronización (ganchos que ya usa la app) ---------- */
 function put(key,t){
- if(!S.bid)return;var by=S.mail;
+ if(!S.bid)return;var by=S.mail,byName=S.userName||S.mail;
  try{
   if(key===K.rec){
    if(!any(['prod','stk','inv'],'e')||t===L.rec)return;
@@ -305,7 +305,7 @@ function put(key,t){
    var mj=JSON.stringify(m);
    if(mj!==L.fm){L.fm=mj;B('datos/fact').set({json:mj,by:by,at:TS()})}
    var seen={};
-   inv.forEach(function(v){var id=String(v.no),j=JSON.stringify(v);seen[id]=1;if(L.f[id]!==j){L.f[id]=j;B('facturas/'+id).set({json:j,no:+v.no||0,by:by,at:TS()})}});
+   inv.forEach(function(v){var id=String(v.no),j=JSON.stringify(v);seen[id]=1;if(L.f[id]!==j){L.f[id]=j;B('facturas/'+id).set({json:j,no:+v.no||0,by:by,byName:byName,at:TS()})}});
    Object.keys(L.f).forEach(function(id){if(!seen[id]){delete L.f[id];B('facturas/'+id).delete()}});
   }
  }catch(e){}
@@ -317,7 +317,7 @@ function rebuild(){
  if(!L.fmeta||!L.fi)return;
  var loc={};try{loc=JSON.parse(localStorage.getItem(K.fact))||{}}catch(e){}
  var a=loc.inv||[],desc=a.length>1&&+a[0].no>+a[a.length-1].no;
- var inv=Object.keys(L.fi).map(function(i){return L.fi[i]}).sort(function(x,y){return desc?y.no-x.no:x.no-y.no});
+ var inv=Object.keys(L.fi).map(function(i){var x=L.fi[i],v=x;try{v=JSON.parse(x.json)}catch(e){v={}};if(x.byName)v.creadoPor=x.byName;if(x.by)v.creadoPorEmail=x.by;return v}).sort(function(x,y){return desc?y.no-x.no:x.no-y.no});
  var o=Object.assign({},L.fmeta,{inv:inv,biz:bizFact()});
  if(cj(o)!==cj(loc)){localStorage.setItem(K.fact,JSON.stringify(o));fire(K.fact)}
 }
@@ -369,20 +369,35 @@ var G=document.createElement('div');G.className='fc-o';G.style.alignItems='cente
 var bt=document.createElement('button');bt.id='fc-btn';bt.type='button';bt.textContent='👤';bt.setAttribute('aria-label','Cuenta');document.documentElement.appendChild(bt);
 function gate(h){G.style.display='flex';G.innerHTML='<div style="text-align:center">'+h+'</div>'}
 function F(l,id,t,v){return '<label>'+l+'<input id="fc-'+id+'" type="'+(t||'text')+'" value="'+esc(v||'')+'"></label>'}
+function google(mode,u){
+ authIntent=mode||'login';
+ if(u){if(authIntent==='register')reg(u);else login();return}
+ var p=new firebase.auth.GoogleAuthProvider();
+ auth.signInWithPopup(p).catch(function(e){
+  if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')auth.signInWithRedirect(p);
+  else login('No se pudo continuar con Google. Intenta de nuevo.');
+ });
+}
 function login(msg){
- gate('<h1>FoodCost RD</h1><p>Calcula. Produce. Vende.</p>'+(msg?'<p style="color:#d33">'+esc(msg)+'</p>':'')+'<button class="pri" id="fc-g" type="button" style="width:100%;padding:14px">Iniciar sesión con Google</button>');
- $('#fc-g').onclick=function(){var p=new firebase.auth.GoogleAuthProvider();auth.signInWithPopup(p).catch(function(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')auth.signInWithRedirect(p);else login('No se pudo iniciar sesión. Intenta de nuevo.')})};
+ gate('<div style="max-width:380px;margin:auto"><h1>FoodCost RD</h1><p>Calcula. Produce. Vende.</p>'+(msg?'<p style="color:#ff9b9b">'+esc(msg)+'</p>':'')+
+ '<p style="color:#93a4bd;font-size:14px">Tu cuenta de Google debe estar asociada a un negocio para entrar.</p>'+
+ '<button class="pri" id="fc-g" type="button" style="width:100%;padding:14px">Iniciar sesión con Google</button>'+
+ '<button id="fc-rg" type="button" style="width:100%;padding:14px">Registrar mi compañía con Google</button></div>');
+ $('#fc-g').onclick=function(){google('login')};
+ $('#fc-rg').onclick=function(){google('register')};
 }
 function reg(u){
- gate('<h2>Registrar negocio</h2><p>Estos datos saldrán en tus facturas.</p>'+F('Nombre del negocio','rn')+F('Teléfono','rt','tel')+F('Correo de contacto','rc','email',u.email)+F('RNC / Cédula (opcional)','rr')+F('Dirección (opcional)','rd')+'<button class="pri" id="fc-r" type="button" style="width:100%;padding:14px">Registrar negocio</button><p style="font-size:13px">¿Te invitaron a un negocio? Pide al dueño que agregue <b>'+esc(S.mail)+'</b> y vuelve a entrar.</p><button id="fc-o" type="button">Salir</button>');
+ gate('<div style="max-width:400px;margin:auto"><h2>Registrar mi compañía</h2><p>Primero asociamos tu cuenta de Google a tu negocio. Estos datos aparecerán en tus facturas.</p>'+F('Tu nombre','rnuser','text',u.displayName||'')+F('Nombre del negocio','rn')+F('Teléfono','rt','tel')+F('Correo de contacto','rc','email',u.email)+F('RNC / Cédula (opcional)','rr')+F('Dirección (opcional)','rd')+
+ '<button class="pri" id="fc-r" type="button" style="width:100%;padding:14px">Crear mi compañía</button>'+
+ '<p style="font-size:13px;color:#93a4bd">Si ya perteneces a un negocio, usa «Iniciar sesión con Google».</p><button id="fc-o" type="button">Cerrar sesión</button></div>');
  $('#fc-o').onclick=out;
  $('#fc-r').onclick=function(){
-  var n=val('rn');if(!n){tt('Escribe el nombre del negocio');return}
+  var un=val('rnuser'),n=val('rn');if(!un){tt('Escribe tu nombre');return}if(!n){tt('Escribe el nombre del negocio');return}
   var b=db.batch(),uid=u.uid;
-  b.set(db.doc('negocios/'+uid),{owner:uid,ownerMail:S.mail,n:n,t:val('rt'),c:val('rc'),rnc:val('rr'),dir:val('rd'),at:TS()});
-  b.set(db.doc('negocios/'+uid+'/miembros/'+S.mail),{rol:'propietario',perm:pm(true),at:TS()});
+  b.set(db.doc('negocios/'+uid),{owner:uid,ownerMail:S.mail,ownerName:un,n:n,t:val('rt'),c:val('rc'),rnc:val('rr'),dir:val('rd'),at:TS()});
+  b.set(db.doc('negocios/'+uid+'/miembros/'+S.mail),{uid:uid,email:S.mail,nombre:un,rol:'propietario',perm:pm(true),at:TS()});
   b.set(db.doc('accesos/'+S.mail),{bid:uid});
-  b.commit().then(function(){enter(uid)}).catch(function(){tt('No se pudo registrar. Revisa tu conexión.')});
+  b.commit().then(function(){S.userName=un;enter(uid)}).catch(function(e){tt('No se pudo registrar. Revisa tu conexión.')});
  };
 }
 function enter(bid){
@@ -391,7 +406,7 @@ function enter(bid){
  S.bid=bid;G.style.display='none';
  subs.push(B('miembros/'+S.mail).onSnapshot(function(s){
   if(!s.exists){alert('Tu acceso a este negocio fue removido.');out();return}
-  var d=s.data(),j=cj(d.perm||{});S.perm=d.perm||{};S.owner=d.rol==='propietario';
+  var d=s.data(),j=cj(d.perm||{});S.perm=d.perm||{};S.owner=d.rol==='propietario';S.userName=d.nombre||S.userName||S.biz.ownerName||S.mail;
   if(j!==pj){pj=j;listen()}apply();
  },function(){}));
  subs.push(B('').onSnapshot(function(s){S.biz=s.data()||{};rebuild();apply()},function(){}));
@@ -406,23 +421,24 @@ function out(){
 var P=document.createElement('div');P.className='fc-o';P.style.display='none';document.documentElement.appendChild(P);
 function closeP(){P.style.display='none';if(psub){psub();psub=null}}
 bt.onclick=function(){
- var b=S.biz||{},h='<h2>'+esc(b.n||'Mi negocio')+'</h2><p>'+esc(S.mail)+(S.owner?' · Propietario':'')+'</p>';
- if(S.owner)h+='<h3>Datos del negocio</h3>'+F('Nombre','pn','text',b.n)+F('Teléfono','pt','tel',b.t)+F('Correo','pc','email',b.c)+F('RNC / Cédula','pr','text',b.rnc)+F('Dirección','pd','text',b.dir)+'<button class="pri" id="fc-sb" type="button">Guardar datos</button><h3>Usuarios</h3><div id="fc-ul"></div>'+F('Agregar correo de Google','ne','email')+'<button class="pri" id="fc-add" type="button">Agregar usuario</button>';
+ var b=S.biz||{},h='<h2>'+esc(b.n||'Mi negocio')+'</h2><p>'+esc(S.userName||S.mail)+' · '+esc(S.mail)+(S.owner?' · Propietario':'')+'</p>';
+ if(S.owner)h+='<h3>Datos del negocio</h3>'+F('Nombre','pn','text',b.n)+F('Teléfono','pt','tel',b.t)+F('Correo','pc','email',b.c)+F('RNC / Cédula','pr','text',b.rnc)+F('Dirección','pd','text',b.dir)+'<button class="pri" id="fc-sb" type="button">Guardar datos</button><h3>Usuarios</h3><div id="fc-ul"></div>'+F('Nombre del usuario','nu')+F('Correo de Google','ne','email')+'<button class="pri" id="fc-add" type="button">Agregar usuario</button>';
  h+='<p><button id="fc-x" type="button">Cerrar</button> <button id="fc-out" type="button">Cerrar sesión</button></p>';
  P.innerHTML='<div>'+h+'</div>';P.style.display='flex';
  $('#fc-x').onclick=closeP;$('#fc-out').onclick=out;
  if(!S.owner)return;
  $('#fc-sb').onclick=function(){if(!val('pn')){tt('Falta el nombre');return}B('').update({n:val('pn'),t:val('pt'),c:val('pc'),rnc:val('pr'),dir:val('pd')}).then(function(){tt('Datos guardados')}).catch(function(){tt('No se pudo guardar')})};
  $('#fc-add').onclick=function(){
-  var em=val('ne').toLowerCase();if(!/^\S+@\S+\.\S+$/.test(em)){tt('Correo no válido');return}
-  var w=db.batch();w.set(B('miembros/'+em),{rol:'empleado',perm:pm(false),at:TS()});w.set(db.doc('accesos/'+em),{bid:S.bid});
-  w.commit().then(function(){$('#fc-ne').value='';tt('Usuario agregado. Activa sus permisos.')}).catch(function(){tt('No se pudo agregar (¿ya pertenece a otro negocio?)')});
+  var em=val('ne').toLowerCase(),un=val('nu');if(!un){tt('Escribe el nombre del usuario');return}if(!/^\S+@\S+\.\S+$/.test(em)){tt('Correo no válido');return}
+  if(em===S.mail){tt('Ese correo es el propietario');return}
+  var w=db.batch();w.set(B('miembros/'+em),{uid:null,email:em,nombre:un,rol:'empleado',perm:pm(false),at:TS()});w.set(db.doc('accesos/'+em),{bid:S.bid});
+  w.commit().then(function(){$('#fc-ne').value='';$('#fc-nu').value='';tt('Usuario agregado. Ahora puedes activar sus permisos.')}).catch(function(){tt('No se pudo agregar. Ese correo podría pertenecer a otro negocio.')});
  };
  var ul=$('#fc-ul');
  psub=B('miembros').onSnapshot(function(q){
   var h='';q.forEach(function(d){
    var id=d.id,x=d.data(),own=x.rol==='propietario';
-   h+='<div style="border:1px solid #8886;border-radius:12px;padding:10px;margin:8px 0"><b>'+esc(id)+'</b>'+(own?' (Propietario)':'<button data-fq="'+esc(id)+'" style="float:right">Quitar</button>');
+   h+='<div style="border:1px solid #8886;border-radius:12px;padding:10px;margin:8px 0"><b>'+esc(x.nombre||id)+'</b><small style="display:block;color:#93a4bd;margin-top:3px">'+esc(x.email||id)+'</small>'+(own?' <span style="color:#22d8ff">Propietario</span>':'<button data-fq="'+esc(id)+'" style="float:right">Quitar</button>');
    if(!own)Object.keys(M).forEach(function(m){var p=(x.perm||{})[m]||{};h+='<div>'+M[m][1]+' '+M[m][0]+': '+['v','e'].map(function(k){return '<label style="display:inline"><input type="checkbox" data-fu="'+esc(id)+'" data-fm="'+m+'" data-fk="'+k+'"'+(p[k]?' checked':'')+'> '+(k==='v'?'Ver':'Editar')+'</label>'}).join(' ')+'</div>'});
    h+='</div>';
   });ul.innerHTML=h;
@@ -432,9 +448,13 @@ bt.onclick=function(){
 };
 
 auth.onAuthStateChanged(function(u){
- if(!u){login();return}
+ if(!u){S.mail='';S.userName='';login();return}
  S.mail=(u.email||'').toLowerCase();gate('<p>Cargando…</p>');
- db.doc('accesos/'+S.mail).get().then(function(s){s.exists?enter(s.data().bid):reg(u)}).catch(function(){login('Sin conexión. Conéctate para iniciar sesión.')});
+ db.doc('accesos/'+S.mail).get().then(function(s){
+   if(s.exists){enter(s.data().bid);return}
+   if(authIntent==='register'){reg(u);return}
+   login('Esta cuenta de Google no tiene un negocio asociado. Si eres el propietario, usa «Registrar mi compañía con Google».');
+ }).catch(function(){login('No se pudo comprobar tu acceso. Conéctate a Internet e inténtalo de nuevo.')});
 });
 gate('<p>Cargando…</p>');
 })();
@@ -938,7 +958,7 @@ function receipt(v,cols){var C=cols||S.cols,L=[];
  function row(l,r,b){r=r||'';var w=C-r.length-(r?1:0),ch=chunk(l,w);ch.forEach(function(x,i){L.push({t:i===0&&r?x+' '.repeat(Math.max(1,C-x.length-r.length))+r:x,b:b})})}
  function sep(){L.push({t:'-'.repeat(C)})}
  if(S.biz.n)ctr(S.biz.n.toUpperCase(),1,2);if(S.biz.t)ctr(S.biz.t);if(S.biz.d)ctr(S.biz.d);
- sep();row('Factura #'+String(v.no).padStart(4,'0'));row(v.fecha);if(v.cli)row('Cliente: '+v.cli);sep();
+ sep();row('Factura #'+String(v.no).padStart(4,'0'));row(v.fecha);if(v.creadoPor)row('Atendido por: '+v.creadoPor);if(v.cli)row('Cliente: '+v.cli);sep();
  v.items.forEach(function(i){var q=N(i.q);row(q+' x '+i.d,n2(r2(q*N(i.p))));if(q!==1)row('   @ '+n2(N(i.p)))});sep();
  var c=calc(v.items,v.env,v.des,v.itb);row('Subtotal',n2(c.sub));
  if(N(v.env))row('Envío',n2(N(v.env)));if(N(v.des))row('Descuento','-'+n2(N(v.des)));if(v.itb)row('ITBIS 18%',n2(c.tax));
@@ -999,8 +1019,8 @@ function tab(t){document.querySelectorAll('.fp').forEach(function(s){s.classList
 function drawHist(){var q=$('fq').value.trim().toLowerCase(),tot=0;S.inv.forEach(function(v){tot+=calc(v.items,v.env,v.des,v.itb).tot});
  $('fhtot').textContent='RD$ '+n2(tot);$('fhsub').textContent=S.inv.length+' factura'+(S.inv.length===1?'':'s')+' guardada'+(S.inv.length===1?'':'s');
  var l=S.inv.filter(function(v){return !q||(v.cli||'').toLowerCase().indexOf(q)>=0||String(v.no).indexOf(q)>=0}).slice().reverse(),more=false;
- more=l.length>200;l=l.slice(0,200);$('fhl').innerHTML=l.length?l.map(function(v){return '<button class="hi" type="button" data-fopen="'+esc(v.no)+'"><span>#'+String(v.no).padStart(4,'0')+' · '+esc(v.cli||'Sin nombre')+'<small>'+esc(v.fecha)+' · '+esc(v.pago)+'</small></span><b>RD$ '+n2(calc(v.items,v.env,v.des,v.itb).tot)+'</b></button>'}).join('')+(more?'<div class="empty">Se muestran las 200 más recientes. Use el buscador.</div>':''):'<div class="empty">No hay facturas registradas.</div>'}
-$('histPdf').onclick=function(){var l=S.inv.slice().reverse(),lines=['HISTORIAL DE FACTURAS',''];if(!l.length)lines.push('No hay facturas registradas.');else{var total=0;l.forEach(function(v){var c=calc(v.items,v.env,v.des,v.itb);total+=c.tot;lines.push('Factura #'+String(v.no).padStart(4,'0'));lines.push('Fecha: '+v.fecha);lines.push('Cliente: '+(v.cli||'Sin nombre'));lines.push('Pago: '+(v.pago||''));v.items.forEach(function(i){lines.push(i.q+' x '+i.d+' — RD$ '+n2(N(i.q)*N(i.p)))});lines.push('Total: RD$ '+n2(c.tot));lines.push('');});lines.push('TOTAL VENDIDO: RD$ '+n2(total));}makePDF('Historial de facturas - FoodCost RD',lines)};
+ more=l.length>200;l=l.slice(0,200);$('fhl').innerHTML=l.length?l.map(function(v){return '<button class="hi" type="button" data-fopen="'+esc(v.no)+'"><span>#'+String(v.no).padStart(4,'0')+' · '+esc(v.cli||'Sin nombre')+'<small>'+esc(v.fecha)+' · '+esc(v.pago)+' · Por: '+esc(v.creadoPor||'No registrado')+'</small></span><b>RD$ '+n2(calc(v.items,v.env,v.des,v.itb).tot)+'</b></button>'}).join('')+(more?'<div class="empty">Se muestran las 200 más recientes. Use el buscador.</div>':''):'<div class="empty">No hay facturas registradas.</div>'}
+$('histPdf').onclick=function(){var l=S.inv.slice().reverse(),lines=['HISTORIAL DE FACTURAS',''];if(!l.length)lines.push('No hay facturas registradas.');else{var total=0;l.forEach(function(v){var c=calc(v.items,v.env,v.des,v.itb);total+=c.tot;lines.push('Factura #'+String(v.no).padStart(4,'0'));lines.push('Fecha: '+v.fecha);lines.push('Cliente: '+(v.cli||'Sin nombre'));lines.push('Generada por: '+(v.creadoPor||'No registrado'));lines.push('Correo: '+(v.creadoPorEmail||'No registrado'));lines.push('Pago: '+(v.pago||''));v.items.forEach(function(i){lines.push(i.q+' x '+i.d+' — RD$ '+n2(N(i.q)*N(i.p)))});lines.push('Total: RD$ '+n2(c.tot));lines.push('');});lines.push('TOTAL VENDIDO: RD$ '+n2(total));}makePDF('Historial de facturas - FoodCost RD',lines)};
 function show(v,f){cur=v;from=f;$('frc').innerHTML=html(v);$('fdel').style.display=f==='hist'?'':'none';setSt(btOK()?'Toque Imprimir para elegir su impresora Bluetooth en la lista de dispositivos.':'');tab('ver')}
 function phone(t){var d=String(t||'').replace(/\D/g,'');return d.length===10?'1'+d:d}
 
@@ -1022,8 +1042,46 @@ $('faddIt').onclick=function(){D.push(newLine());drawItems();var a=document.quer
 $('fgen').onclick=function(){var it=draftItems();
  if(!it.length){alert('Agregue al menos un producto con cantidad y precio.');return}
  try{var SA=prods(),SO=[];D.forEach(function(l){var i=info(l,SA);if(l.k&&l.k!=='@'&&i.ok&&i.pr)SO.push({id:i.pr.id,q:l.m==='p'&&i.pr.pack>1?N(l.q)*i.pr.pack:N(l.q)})});if(window.stockOut)window.stockOut(SO)}catch(e){}
- var v={no:S.seq++,fecha:new Date().toLocaleString('es-DO',{dateStyle:'short',timeStyle:'short'}),cli:$('fcli').value.trim(),tel:$('ftel').value.trim(),items:it,env:$('fenv').value,des:$('fdes').value,itb:$('fitb').value==='1',pago:$('fpago').value,nota:$('fnota').value.trim()};
+ var v={no:S.seq++,fecha:new Date().toLocaleString('es-DO',{dateStyle:'short',timeStyle:'short'}),creadoPor:S.userName||S.mail,creadoPorEmail:S.mail,cli:$('fcli').value.trim(),tel:$('ftel').value.trim(),items:it,env:$('fenv').value,des:$('fdes').value,itb:$('fitb').value==='1',pago:$('fpago').value,nota:$('fnota').value.trim()};
  S.inv.push(v);save();D=[newLine()];['fcli','ftel','fenv','fdes','fnota'].forEach(function(i){$(i).value=''});$('fitb').value='0';drawItems();
  show(v,'nueva')};
 $('fbk').onclick=function(){tab(from)};
-$('fwa').onclick=function(){if(!cur)return;var v=
+$('fwa').onclick=function(){if(!cur)return;var v=cur;shareImage(v,function(b,f){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;document.body.appendChild(a);a.click();a.remove();setSt('Imagen guardada. Se abrirá WhatsApp para que la adjunte.','ok');window.open('https://wa.me/'+phone(v.tel),'_blank')})};
+$('fimg').onclick=function(){printNow(cur)};
+$('fdel').onclick=function(){if(cur&&confirm('¿Eliminar esta factura del historial?')){S.inv=S.inv.filter(function(i){return i.no!==cur.no});save();tab('hist')}};
+$('fpc').onclick=function(){$('fpv').style.display='none'};
+window.addEventListener('factopen',function(){drawItems()});
+function fillAj(){$('fbn').value=S.biz.n;$('fbt').value=S.biz.t;$('fbd').value=S.biz.d;$('fpp').value=String(S.cols);$('fdn').value=String(S.dens)}
+load();fillAj();D=[newLine()];drawItems();
+if(window.Sync)Sync.pull(KEY,function(){load();fillAj();drawHist()});
+})();
+</script>
+<script>(function(){document.querySelectorAll('[data-tip]').forEach(function(t){var k='costeo_tip3_'+t.dataset.tip,seen=false;try{seen=localStorage.getItem(k)==='1'}catch(e){}if(seen)return;t.hidden=false;t.querySelector('button').onclick=function(){t.hidden=true;try{localStorage.setItem(k,'1')}catch(e){}}})})();</script>
+<div id="tour" role="dialog" aria-modal="true"><div class="bx"><div class="ti" id="tti"></div><h2 id="ttt"></h2><p id="ttp"></p><div class="dt" id="tdt"></div><div class="bt"><button type="button" id="tsk">Omitir</button><button type="button" class="pri" id="tnx">Siguiente</button></div></div></div>
+<script>
+(function(){var K='costeo_tour_v5',T=[["Introducción","FoodCost RD","Es una herramienta que te permite gestionar tu inventario, producción y punto de venta desde un solo lugar. Define tus recetas, controla los insumos, conoce el costo de cada producto, registra la producción y mantén tus existencias actualizadas automáticamente."],["Paso 1","Registra tus insumos","Guarda ingredientes con su precio y existencia en el Inventario."],["Paso 2","Elabora tus recetas","Arma cada receta y conoce su costo y precio de venta ideal."],["Paso 3","Registra la producción","Anota lo que produjiste y las existencias se actualizan solas."],["Paso 4","Factura","Emite facturas y envíalas por WhatsApp o imprímelas."],["Listo","Empieza a calcular","Comienza por el Inventario. Calcula. Produce. Vende."]],i=0,el=document.getElementById('tour');
+function done(){el.style.display='none';try{localStorage.setItem(K,'1')}catch(e){}}
+function draw(){var t=T[i];document.getElementById('tti').textContent=t[0];document.getElementById('ttt').textContent=t[1];document.getElementById('ttp').textContent=t[2];document.getElementById('tdt').innerHTML=T.map(function(x,j){return '<i'+(j===i?' class="on"':'')+'></i>'}).join('');document.getElementById('tnx').textContent=i===T.length-1?'Comenzar':'Siguiente'}
+document.getElementById('tnx').onclick=function(){if(i>=T.length-1)done();else{i++;draw()}};document.getElementById('tsk').onclick=done;
+var seen=false;try{seen=localStorage.getItem(K)==='1'}catch(e){}
+if(!seen){draw();el.style.display='flex'}})();
+</script>
+<script>
+(function(){var d=document.getElementById('dock'),m=document.querySelector('main');if(!d||!m)return;
+var bs=d.querySelectorAll('button'),t;
+function cur(){var o=document.querySelector('.view.on');return o?o.id.replace('view-',''):'home'}
+function sync(){var v=cur();d.classList.toggle('off',v==='home');bs.forEach(function(b){if(b.dataset.view===v)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')})}
+new MutationObserver(sync).observe(m,{attributes:true,attributeFilter:['class'],subtree:true});sync();
+document.addEventListener('focusin',function(e){if(/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)){clearTimeout(t);d.classList.add('kb')}});
+document.addEventListener('focusout',function(){clearTimeout(t);t=setTimeout(function(){d.classList.remove('kb')},150)});
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
