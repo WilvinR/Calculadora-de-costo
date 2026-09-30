@@ -304,9 +304,9 @@ function put(key,t){
  var by=S.mail,byName=S.userName||S.mail;
  try{
   if(key===K.rec){
-   if(!any(['prod','stk','inv'],'e')||t===L.rec)return;
-   L.rec=t;
-   B('datos/costeo').set({json:t,by:by,byName:byName,at:TS()});
+   if(!any(['prod','stk','inv'],'e'))return;
+   if(t===L.rec&&!hasSD())return;
+   L.q=t;flushRec();
   }else if(key===K.fact){
    if(!can('fact','e'))return;
    var o=JSON.parse(t),inv=o.inv||[],m=Object.assign({},o);delete m.inv;delete m.biz;
@@ -321,6 +321,59 @@ function put(key,t){
   }
  }catch(e){console.error('Sync error',e)}
 }
+
+/* ---------- Stock seguro para varios usuarios ----------
+   El stock ya no se sobrescribe: cada venta/producción registra un DELTA (+/-) y se aplica
+   sobre el valor actual de la nube dentro de una transacción de Firestore. */
+L.sd={};L.q=null;L.fl=false;
+function hasSD(){return Object.keys(L.sd).some(function(k){return L.sd[k]})}
+function sdCopy(){var o={};Object.keys(L.sd).forEach(function(k){if(L.sd[k])o[k]=L.sd[k]});return o}
+window.fcStockDelta=function(id,d){id=String(id);L.sd[id]=(L.sd[id]||0)+(+d||0)};
+/*MERGE*/
+function mergeCosteo(cloudJson,localJson,D,knownJson){
+ var num=function(v){v=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(v)?v:0};
+ var rd=function(v){return Math.round(v*100)/100};
+ var loc=JSON.parse(localJson),cl={},kn={};
+ try{cl=JSON.parse(cloudJson||'{}')}catch(e){cl={}}
+ try{(JSON.parse(knownJson||'{}').prods||[]).forEach(function(p){kn[String(p.id)]=1})}catch(e){}
+ var cp={};(cl.prods||[]).forEach(function(p){cp[String(p.id)]=p});
+ var lp=loc.prods||[],li={};
+ lp.forEach(function(p){var id=String(p.id);li[id]=1;var c=cp[id];if(c){p.stock=Math.max(0,rd(num(c.stock)+(D[id]||0)))}});
+ (cl.prods||[]).forEach(function(c){var id=String(c.id);if(!li[id]&&!kn[id])lp.push(c)});
+ loc.prods=lp;
+ return JSON.stringify(loc);
+}
+/*ENDMERGE*/
+var retryT=null;
+function flushRec(){
+ if(L.fl||L.q==null||!S.bid)return;
+ var t=L.q;L.q=null;L.fl=true;
+ var D=sdCopy(),ref=B('datos/costeo'),by=S.mail,byName=S.userName||S.mail,out=t;
+ db.runTransaction(function(tx){return tx.get(ref).then(function(s){
+  out=s.exists?mergeCosteo(s.data().json||'',t,D,L.rec):t;
+  tx.set(ref,{json:out,by:by,byName:byName,at:TS()});
+ })}).then(function(){
+  Object.keys(D).forEach(function(k){L.sd[k]=(L.sd[k]||0)-D[k]});
+  L.rec=out;L.fl=false;
+  if(L.q!=null)flushRec();
+ }).catch(function(e){
+  console.error('Sync costeo',e);L.fl=false;if(L.q==null)L.q=t;
+  try{tt('Sin conexión: se reintentará guardar')}catch(_){}
+  clearTimeout(retryT);retryT=setTimeout(flushRec,6000);
+ });
+}
+window.addEventListener('online',function(){flushRec()});
+/* Número de factura único (contador atómico) */
+window.fcNextNo=function(localMax){
+ if(!S.bid)return Promise.reject(new Error('sin negocio'));
+ var ref=B('datos/contador');
+ var tr=db.runTransaction(function(tx){return tx.get(ref).then(function(s){
+  var n=Math.max(s.exists?(+s.data().n||0):0,+localMax||0)+1;
+  tx.set(ref,{n:n,by:S.mail,at:TS()});return n;
+ })});
+ var to=new Promise(function(_,rj){setTimeout(function(){rj(new Error('timeout'))},8000)});
+ return Promise.race([tr,to]);
+};
 window.Sync={put:put,pull:function(k,cb){pulls[k]=cb}};
 function fire(k){if(pulls[k])try{pulls[k]()}catch(e){console.error(e)}}
 function bizFact(){var b=S.biz||{};return{n:b.n||'',t:b.t||'',d:[b.rnc?'RNC: '+b.rnc:'',b.dir||''].filter(Boolean).join(' · ')}}
@@ -807,7 +860,7 @@ p.lines.forEach(function(l){if(!l.i||l.i[0]!=='g')return;var g=ing(l.i.slice(1))
 Object.keys(need).forEach(function(k){var g=ing(k);if(need[k]>N(g.st)+1e-9)bad.push((g.n||'Ingrediente')+': necesita '+fx(need[k])+', hay '+fx(N(g.st))+' '+U[g.u][0])});
 if(bad.length)return toast('No alcanza el inventario. '+bad.slice(0,3).join(' · '),1);
 Object.keys(need).forEach(function(k){var g=ing(k);g.st=String(Math.round((N(g.st)-need[k])*10000)/10000)});
-p.stock=fx(N(p.stock)+n);save();openStk=null;renderStk();renderIngs();toast('Producido: '+fx(n)+' unid.')}
+p.stock=fx(N(p.stock)+n);if(window.fcStockDelta)window.fcStockDelta(p.id,n);save();openStk=null;renderStk();renderIngs();toast('Producido: '+fx(n)+' unid.')}
 function itemOptions(sel){var h='<option value=""'+(sel?'':' selected')+' disabled>Seleccione un ingrediente</option><optgroup label="Ingredientes">';
 if(S.ings.length)S.ings.forEach(function(g){h+='<option value="g'+g.id+'"'+('g'+g.id===sel?' selected':'')+'>'+esc(g.n||'(sin nombre)')+'</option>'});
 else h+='<option disabled>Aún no hay ingredientes (agréguelos en el paso 1)</option>';
@@ -940,7 +993,7 @@ load();fill();renderIngs();renderLines();
 showView('home');
 if(window.Sync)Sync.pull(KEY,function(){load();fill();renderIngs();renderLines();renderProdList();refresh()});
 /* Interfaz de consulta para Facturación: expone los productos con receta completa y su precio por unidad. */
-window.stockOut=function(a){try{a.forEach(function(x){S.prods.forEach(function(p){if(p.id===x.id)p.stock=Math.max(0,fx(N(p.stock)-x.q))})});save()}catch(e){}};
+window.stockOut=function(a){try{a.forEach(function(x){S.prods.forEach(function(p){if(p.id===x.id){p.stock=Math.max(0,fx(N(p.stock)-x.q));if(window.fcStockDelta)window.fcStockDelta(p.id,-x.q)}})});save()}catch(e){}};
 window.getSellables=function(){var o=[];(S.prods||[]).forEach(function(p){if(p.draft)return;var n=(p.rec.n||'').trim(),w=uRaw(p),u=Math.round(w*100)/100;if(n&&u>0)o.push({id:p.id,n:n,u:u,w:w,pack:Math.floor(N(p.pack))>1?Math.floor(N(p.pack)):0})});return o};
 </script>
 <script>
@@ -1084,10 +1137,14 @@ document.addEventListener('click',function(e){var b=e.target.closest('button');i
 $('faddIt').onclick=function(){D.push(newLine());drawItems();var a=document.querySelectorAll('#fitems select[data-fk]'),l=a[a.length-1];if(l){l.scrollIntoView({block:'center'})}};
 $('fgen').onclick=function(){var it=draftItems();
  if(!it.length){alert('Agregue al menos un producto con cantidad y precio.');return}
+ var btn=$('fgen');if(btn.disabled)return;btn.disabled=true;
+ var go=function(no){btn.disabled=false;
  try{var SA=prods(),SO=[];D.forEach(function(l){var i=info(l,SA);if(l.k&&l.k!=='@'&&i.ok&&i.pr)SO.push({id:i.pr.id,q:l.m==='p'&&i.pr.pack>1?N(l.q)*i.pr.pack:N(l.q)})});if(window.stockOut)window.stockOut(SO)}catch(e){}
- var v={no:S.seq++,fecha:new Date().toLocaleString('es-DO',{dateStyle:'short',timeStyle:'short'}),creadoPor:S.userName||S.mail,creadoPorEmail:S.mail,cli:$('fcli').value.trim(),tel:$('ftel').value.trim(),items:it,env:$('fenv').value,des:$('fdes').value,itb:$('fitb').value==='1',pago:$('fpago').value,nota:$('fnota').value.trim()};
+ S.seq=Math.max(S.seq,no+1);var v={no:no,fecha:new Date().toLocaleString('es-DO',{dateStyle:'short',timeStyle:'short'}),creadoPor:S.userName||S.mail,creadoPorEmail:S.mail,cli:$('fcli').value.trim(),tel:$('ftel').value.trim(),items:it,env:$('fenv').value,des:$('fdes').value,itb:$('fitb').value==='1',pago:$('fpago').value,nota:$('fnota').value.trim()};
  S.inv.push(v);save();D=[newLine()];['fcli','ftel','fenv','fdes','fnota'].forEach(function(i){$(i).value=''});$('fitb').value='0';drawItems();
  show(v,'nueva')};
+ var lm=S.seq-1;S.inv.forEach(function(x){if(+x.no>lm)lm=+x.no});
+ (window.fcNextNo?window.fcNextNo(lm):Promise.reject()).then(go,function(){go(S.seq++)})};
 $('fbk').onclick=function(){tab(from)};
 $('fwa').onclick=function(){if(!cur)return;var v=cur;shareImage(v,function(b,f){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;document.body.appendChild(a);a.click();a.remove();setSt('Imagen guardada. Se abrirá WhatsApp para que la adjunte.','ok');window.open('https://wa.me/'+phone(v.tel),'_blank')})};
 $('fimg').onclick=function(){printNow(cur)};
