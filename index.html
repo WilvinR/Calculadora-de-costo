@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="FoodCost RD">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>FoodCost RD — Calcula. Produce. Vende.</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Sora:wght@600;800&display=swap" rel="stylesheet">
 <style>
@@ -267,6 +267,8 @@ main{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 #dock .dl{max-width:0;overflow:hidden;opacity:0;margin-left:0;transition:max-width .35s cubic-bezier(.2,.8,.2,1),opacity .25s,margin .35s}
 #dock button[aria-current=page],#dock button[aria-current=page]:hover{padding:0 14px;color:#00121f;background:linear-gradient(135deg,#2f7bff,#19d9ff);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 18px rgba(34,160,255,.5)}
 #dock button[aria-current=page] .dl{max-width:84px;opacity:1;margin-left:7px}
+#dock .fc-account{flex:none;width:44px;height:44px;min-width:44px;padding:0}
+#dock .fc-account[aria-current=page]{padding:0!important;background:rgba(20,30,52,.88)!important;border:2px solid #19d9ff!important;box-shadow:0 0 0 2px rgba(47,123,255,.55),0 4px 18px rgba(34,160,255,.5)!important}
 @media(max-width:380px){#dock button{min-width:38px;padding:0 8px}#dock button[aria-current=page]{padding:0 11px}#dock{gap:0;padding:5px}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -406,7 +408,8 @@ var profileImg=document.createElement('img');profileImg.className='fc-photo';pro
 document.documentElement.appendChild(bt);
 function attachAccountButton(){setProfilePhoto(S.photoURL||'');bt.onclick=function(){if(P.style.display==='flex')closeProfile();else showProfile()};}
 function placeAccountButton(v){var dock=document.getElementById('dock');if(!bt||!dock)return;if(v==='home'){bt.classList.remove('fc-in-dock');if(bt.parentNode!==document.documentElement)document.documentElement.appendChild(bt);bt.style.display='grid';}else{bt.classList.add('fc-in-dock');if(bt.parentNode!==dock)dock.appendChild(bt);bt.style.display='grid';}}
-document.addEventListener('DOMContentLoaded',function(){attachAccountButton();placeAccountButton('home')});
+window.placeAccountButton=placeAccountButton;
+document.addEventListener('DOMContentLoaded',function(){attachAccountButton();var o=document.querySelector('.view.on');placeAccountButton(o?o.id.replace('view-',''):'home')});
 function gate(h){G.style.display='flex';G.innerHTML='<div style="text-align:center">'+h+'</div>'}
 function F(l,id,t,v){return '<label>'+l+'<input id="fc-'+id+'" type="'+(t||'text')+'" value="'+esc(v||'')+'"></label>'}
 function google(mode){authIntent=mode||'login';var p=new firebase.auth.GoogleAuthProvider();auth.signInWithPopup(p).catch(function(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')auth.signInWithRedirect(p);else login('No se pudo continuar con Google. Intenta de nuevo.')})}
@@ -425,6 +428,7 @@ function showProfile(){
  // Al abrir Perfil/Ajustes dejamos de estar en Home: el avatar pasa a la barra inferior
  // y la barra se mantiene visible para que Perfil se comporte como una sección normal.
  if(typeof placeAccountButton==='function')placeAccountButton('profile');
+ bt.setAttribute('aria-current','page');
  var dock=document.getElementById('dock');if(dock)dock.classList.remove('off');
  var b=S.biz||{},u=S.currentUser||{},isOwner=S.owner;
  var avatar=u.photoURL||S.photoURL||'';
@@ -451,7 +455,7 @@ function showProfile(){
  ul.onclick=function(e){var q=e.target.dataset&&e.target.dataset.fq;if(!q||!confirm('¿Quitar a '+q+'?'))return;var w=db.batch();w.delete(B('miembros/'+q));w.delete(db.doc('accesos/'+q));w.commit()};
 }
 function closeProfile(){
- P.style.display='none';
+ P.style.display='none';bt.removeAttribute('aria-current');
  if(psub){psub();psub=null}
  // Al cerrar Perfil/Ajustes, el avatar vuelve a seguir exactamente la sección actual.
  var v=document.querySelector('.view.on');v=v?v.id.replace('view-',''):'home';
