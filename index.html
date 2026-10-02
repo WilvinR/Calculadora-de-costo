@@ -325,33 +325,81 @@ L.sd={};L.q=null;L.fl=false;
 function hasSD(){return Object.keys(L.sd).some(function(k){return L.sd[k]})}
 function sdCopy(){var o={};Object.keys(L.sd).forEach(function(k){if(L.sd[k])o[k]=L.sd[k]});return o}
 window.fcStockDelta=function(id,d){id=String(id);L.sd[id]=(L.sd[id]||0)+(+d||0)};
+window.fcIngDelta=function(id,d){window.fcStockDelta('g'+id,d)};
 /*MERGE*/
 function mergeCosteo(cloudJson,localJson,D,knownJson){
+ /* Fusión de 3 vías: base = último estado conocido de la nube, local = lo que editó este usuario, cloud = estado actual en la nube.
+    Por cada campo: si este usuario lo cambió se conserva su cambio; si no, se conserva el de la nube. Así las ediciones de otros no se pierden.
+    Las existencias (productos e ingredientes) se fusionan por DELTA: nube + movimiento propio. */
  var num=function(v){v=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(v)?v:0};
- var rd=function(v){return Math.round(v*100)/100};
- var loc=JSON.parse(localJson),cl={},kn={};
- try{cl=JSON.parse(cloudJson||'{}')}catch(e){cl={}}
- try{(JSON.parse(knownJson||'{}').prods||[]).forEach(function(p){kn[String(p.id)]=1})}catch(e){}
- var cp={};(cl.prods||[]).forEach(function(p){cp[String(p.id)]=p});
- var lp=loc.prods||[],li={};
- lp.forEach(function(p){var id=String(p.id);li[id]=1;var c=cp[id];if(c){p.stock=Math.max(0,rd(num(c.stock)+(D[id]||0)))}});
- (cl.prods||[]).forEach(function(c){var id=String(c.id);if(!li[id]&&!kn[id])lp.push(c)});
- loc.prods=lp;
- return JSON.stringify(loc);
+ var rd=function(v){return Math.round(v*100)/100},rd4=function(v){return Math.round(v*10000)/10000};
+ var loc=JSON.parse(localJson),cl={},ba={};
+ try{cl=JSON.parse(cloudJson||'{}')||{}}catch(e){cl={}}
+ try{ba=JSON.parse(knownJson||'{}')||{}}catch(e){ba={}}
+ var J=function(v){return JSON.stringify(v===undefined?null:v)};
+ var same=function(a,b){return J(a)===J(b)};
+ var strip=function(x,k){var o={};Object.keys(x||{}).forEach(function(z){if(z!==k)o[z]=x[z]});return o};
+ function mergeObj(l,b,c,skip){
+  var o={},keys={};
+  [l,b,c].forEach(function(x){Object.keys(x||{}).forEach(function(k){keys[k]=1})});
+  Object.keys(keys).forEach(function(k){
+   if(skip&&skip(k))return;
+   var lv=l?l[k]:undefined,bv=b?b[k]:undefined,cv=c?c[k]:undefined;
+   var v=same(lv,bv)?cv:lv;
+   if(v!==undefined)o[k]=v;
+  });
+  return o;
+ }
+ function mergeList(ll,bl,cList,sk,fn){
+  var bm={},cm={},seen={},out=[];
+  bl.forEach(function(x){bm[String(x.id)]=x});
+  cList.forEach(function(x){cm[String(x.id)]=x});
+  ll.forEach(function(x){
+   var id=String(x.id),b=bm[id],c=cm[id];seen[id]=1;
+   if(b&&c)out.push(fn(x,b,c));
+   else if(b&&!c){ if(!same(strip(x,sk),strip(b,sk)))out.push(x) } /* otro usuario lo eliminó: se respeta salvo que yo lo haya modificado */
+   else out.push(x);
+  });
+  cList.forEach(function(c){var id=String(c.id);if(!seen[id]&&!bm[id])out.push(c)}); /* agregado por otro usuario */
+  return out;
+ }
+ var o=mergeObj(loc,ba,cl,function(k){return k==='ings'||k==='prods'||k==='nid'});
+ o.nid=Math.max(num(loc.nid),num(cl.nid));
+ o.ings=mergeList(loc.ings||[],ba.ings||[],cl.ings||[],'st',function(l,b,c){
+  var g=mergeObj(l,b,c,function(k){return k==='st'}),key='g'+l.id,st;
+  if(D[key])st=Math.max(0,rd4(num(c.st)+D[key]));
+  else st=same(l.st,b.st)?c.st:l.st;
+  if(st!==undefined)g.st=String(st);
+  return g;
+ });
+ o.prods=mergeList(loc.prods||[],ba.prods||[],cl.prods||[],'stock',function(l,b,c){
+  var p=mergeObj(l,b,c,function(k){return k==='stock'||k==='rec'||k==='c'});
+  p.rec=mergeObj(l.rec,b.rec,c.rec);p.c=mergeObj(l.c,b.c,c.c);
+  p.stock=Math.max(0,rd(num(c.stock)+(D[String(l.id)]||0)));
+  return p;
+ });
+ return JSON.stringify(o);
 }
 /*ENDMERGE*/
-var retryT=null;
+var retryT=null,pend=false;
+function typing(){var a=document.activeElement;return !!(a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)&&a.closest&&a.closest('main'))}
+function applyCloud(){
+ if(typing()||L.q!=null||L.fl){pend=true;return}
+ pend=false;L.rec=window.__fcCloudRec;fire(K.rec);
+}
+document.addEventListener('focusout',function(){setTimeout(function(){if(pend)applyCloud()},400)});
 function flushRec(){
  if(L.fl||L.q==null||!S.bid)return;
  var t=L.q;L.q=null;L.fl=true;
  var D=sdCopy(),ref=B('datos/costeo'),by=S.mail,byName=S.userName||S.mail,out=t;
  db.runTransaction(function(tx){return tx.get(ref).then(function(s){
-  out=s.exists?mergeCosteo(s.data().json||'',t,D,L.rec):t;
+  out=s.exists?mergeCosteo(s.data().json||'',t,D,L.rec):t;L.out=out;
   tx.set(ref,{json:out,by:by,byName:byName,at:TS()});
  })}).then(function(){
   Object.keys(D).forEach(function(k){L.sd[k]=(L.sd[k]||0)-D[k]});
   L.rec=out;L.fl=false;
   if(L.q!=null)flushRec();
+  else{var dif=false;try{dif=cj(JSON.parse(out))!==cj(JSON.parse(t))}catch(_){dif=out!==t}if(pend||dif){window.__fcCloudRec=out;if(dif)pend=true;if(pend)applyCloud()}}
  }).catch(function(e){
   console.error('Sync costeo',e);L.fl=false;if(L.q==null)L.q=t;
   try{tt('Sin conexión: se reintentará guardar')}catch(_){}
@@ -396,9 +444,10 @@ function listen(){
  dsubs.forEach(function(f){try{f()}catch(e){}});dsubs=[];var er=function(e){console.error(e)};
  if(any(['prod','stk','inv'],'v'))dsubs.push(B('datos/costeo').onSnapshot(function(s){
   if(s.metadata.hasPendingWrites)return;
-  window.__fcCloudRec=s.exists?(s.data().json||''):'';
-  L.rec=window.__fcCloudRec;
-  fire(K.rec);
+  var cjn=s.exists?(s.data().json||''):'';
+  window.__fcCloudRec=cjn;
+  if(cjn===L.out){L.rec=cjn;return}
+  applyCloud();
  },er));
  if(can('fact','v')){
   dsubs.push(B('datos/fact').onSnapshot(function(s){
@@ -877,7 +926,7 @@ var need={},bad=[];
 p.lines.forEach(function(l){if(!l.i||l.i[0]!=='g')return;var g=ing(l.i.slice(1));if(!g||!U[l.u]||!U[g.u]||U[l.u][1]!==U[g.u][1])return;need[g.id]=(need[g.id]||0)+N(l.q)*U[l.u][2]/U[g.u][2]*(n/r)/(1-Math.min(N(g.m),90)/100)});
 Object.keys(need).forEach(function(k){var g=ing(k);if(need[k]>N(g.st)+1e-9)bad.push((g.n||'Ingrediente')+': necesita '+fx(need[k])+', hay '+fx(N(g.st))+' '+U[g.u][0])});
 if(bad.length)return toast('No alcanza el inventario. '+bad.slice(0,3).join(' · '),1);
-Object.keys(need).forEach(function(k){var g=ing(k);g.st=String(Math.round((N(g.st)-need[k])*10000)/10000)});
+Object.keys(need).forEach(function(k){var g=ing(k);g.st=String(Math.round((N(g.st)-need[k])*10000)/10000);if(window.fcIngDelta)window.fcIngDelta(k,-need[k])});
 p.stock=fx(N(p.stock)+n);if(window.fcStockDelta)window.fcStockDelta(p.id,n);save();openStk=null;renderStk();renderIngs();toast('Producido: '+fx(n)+' unid.')}
 function itemOptions(sel){var h='<option value=""'+(sel?'':' selected')+' disabled>Seleccione un ingrediente</option><optgroup label="Ingredientes">';
 if(S.ings.length)S.ings.forEach(function(g){h+='<option value="g'+g.id+'"'+('g'+g.id===sel?' selected':'')+'>'+esc(g.n||'(sin nombre)')+'</option>'});
@@ -1001,7 +1050,7 @@ if(t.dataset.del==='ings'){var id=t.dataset.id,g0=ing(id),us=S.prods.filter(func
 if(t.dataset.del==='lines'){S.lines.splice(+t.dataset.id,1);save();return renderLines()}
 });
 $('invPdf').onclick=function(){var lines=['INVENTARIO',''];if(!S.ings.length)lines.push('No hay ingredientes registrados.');else S.ings.slice().reverse().forEach(function(g){var c=base(g)*U[g.u][2],w=N(g.st),lo=N(g.lo),status=w<=0?'Sin existencia':(lo>0&&w<lo?'Existencia baja':'Disponible');lines.push((g.n||'(sin nombre)'));lines.push('Costo: '+(c>0?fmt(c)+' por '+U[g.u][3]:'Sin precio'));lines.push('Existencia: '+fx(w)+' '+U[g.u][3]);lines.push('Estado: '+status);lines.push('');});makePDF('Inventario - FoodCost RD',lines)};
-$('addInv').onclick=function(){$('invQ').value='';invLimit=25;S.ings.push({id:++S.nid,n:'',p:'',q:'',u:'kg',m:'0'});openInv=S.nid;save();renderIngs();var a=document.querySelector('#invList [data-f="n"]');if(a){a.scrollIntoView({block:'center'});a.focus()}};
+$('addInv').onclick=function(){$('invQ').value='';invLimit=25;var nid=Date.now();while(ing(nid))nid++;S.nid=Math.max(N(S.nid),0);S.ings.push({id:nid,n:'',p:'',q:'',u:'kg',m:'0'});openInv=nid;save();renderIngs();var a=document.querySelector('#invList [data-f="n"]');if(a){a.scrollIntoView({block:'center'});a.focus()}};
 $('invQ').addEventListener('input',function(){invLimit=25;renderIngs()});
 $('pkq').addEventListener('input',drawPk);
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closePk()});
@@ -1176,7 +1225,7 @@ $('fimg').onclick=function(){printNow(cur)};
 $('fdel').onclick=function(){if(cur&&confirm('¿Eliminar esta factura del historial?')){S.inv=S.inv.filter(function(i){return i.no!==cur.no});save();tab('hist')}};
 $('fpc').onclick=function(){$('fpv').style.display='none'};
 window.addEventListener('factopen',function(){drawItems()});
-function fillAj(){var b=window.__fcBiz||{};var owner=window.__fcOwner!==false;S.biz={n:b.n||'',t:b.t||'',d:[b.rnc?'RNC: '+b.rnc:'',b.dir||''].filter(Boolean).join(' · ')};S.cols=b.paperWidth===48?48:32;S.dens=(b.printDensity===0||b.printDensity===2)?b.printDensity:1;$('fbn').value=b.n||'';$('fbt').value=b.t||'';$('fbc').value=b.c||'';$('fbr').value=b.rnc||'';$('fbd').value=b.dir||'';$('fpp').value=String(S.cols);$('fdn').value=String(S.dens);['fbn','fbt','fbc','fbr','fbd'].forEach(function(id){$(id).readOnly=!owner});$('fb-savebiz').style.display=owner?'block':'none';$('fpp').disabled=!owner;$('fdn').disabled=!owner}
+function fillAj(){var b=window.__fcBiz||{};var $=function(i){var e=document.getElementById(i);return e===document.activeElement?{style:{}}:e};var owner=window.__fcOwner!==false;S.biz={n:b.n||'',t:b.t||'',d:[b.rnc?'RNC: '+b.rnc:'',b.dir||''].filter(Boolean).join(' · ')};S.cols=b.paperWidth===48?48:32;S.dens=(b.printDensity===0||b.printDensity===2)?b.printDensity:1;$('fbn').value=b.n||'';$('fbt').value=b.t||'';$('fbc').value=b.c||'';$('fbr').value=b.rnc||'';$('fbd').value=b.dir||'';$('fpp').value=String(S.cols);$('fdn').value=String(S.dens);['fbn','fbt','fbc','fbr','fbd'].forEach(function(id){$(id).readOnly=!owner});$('fb-savebiz').style.display=owner?'block':'none';$('fpp').disabled=!owner;$('fdn').disabled=!owner}
 load();fillAj();D=[newLine()];drawItems();
 window.addEventListener('fc-biz',function(){fillAj();drawHist()});
 $('fb-savebiz').onclick=function(){var n=$('fbn').value.trim();if(!n){window.FC.toast('Falta el nombre del negocio');return}window.FC.updateBusiness({n:n,t:$('fbt').value.trim(),c:$('fbc').value.trim(),rnc:$('fbr').value.trim(),dir:$('fbd').value.trim()}).then(function(){window.FC.toast('Datos del negocio guardados')}).catch(function(){window.FC.toast('No se pudo guardar')})};
