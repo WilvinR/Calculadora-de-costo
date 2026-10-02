@@ -425,6 +425,11 @@ window.fcCreateInvoice=function(build,localMax){
  var to=new Promise(function(_,rj){setTimeout(function(){rj(new Error('Sin conexión o respuesta muy lenta. La factura NO se generó.'))},15000)});
  return Promise.race([tr,to]);
 };
+window.fcDeleteInvoice=function(no){
+ if(!S.bid||!can('fact','e'))return Promise.reject(new Error('Tu usuario no tiene permiso para eliminar facturas.'));
+ var id=String(no);
+ return B('facturas/'+id).delete().then(function(){delete L.f[id];if(L.fi)delete L.fi[id]});
+};
 window.Sync={put:put,pull:function(k,cb){pulls[k]=cb}};
 function fire(k){if(pulls[k])try{pulls[k]()}catch(e){console.error(e)}}
 function bizFact(){var b=S.biz||{};return{n:b.n||'',t:b.t||'',d:[b.rnc?'RNC: '+b.rnc:'',b.dir||''].filter(Boolean).join(' · ')}}
@@ -1066,9 +1071,11 @@ window.getSellables=function(){var o=[];(S.prods||[]).forEach(function(p){if(p.d
 <script>
 (function(){
 var KEY='facturacion-rd-v1',$=function(i){return document.getElementById(i)};
-var S={biz:{n:'',t:'',d:''},cols:32,dens:1,seq:1,inv:[]},D=[],cur=null,from='nueva',busy=false,PR={dev:null,chr:null};
+var S={biz:{n:'',t:'',d:''},cols:32,dens:1,seq:1,inv:[]},D=[],cur=null,from='nueva',busy=false,PR={dev:null,chr:null,all:false,ph:false,sz:0};
 var SVC='0000ff00-0000-1000-8000-00805f9b34fb',CHR='0000ff02-0000-1000-8000-00805f9b34fb';
 var FONT='ui-monospace,Menlo,Consolas,monospace';
+/* Servicios BLE habituales en impresoras térmicas (Phomemo, ESC/POS genéricas, Cat/GB01, Xprinter, etc.). Se usan para detectar solas la característica de escritura. */
+var KNOWN=[SVC,'0000ffe0-0000-1000-8000-00805f9b34fb','000018f0-0000-1000-8000-00805f9b34fb','49535343-fe7d-4ae5-8fa9-9fafd205e455','e7810a71-73ae-499d-8c15-faa9aef0c3f2','0000ae30-0000-1000-8000-00805f9b34fb','0000fee7-0000-1000-8000-00805f9b34fb','0000fff0-0000-1000-8000-00805f9b34fb','0000ffb0-0000-1000-8000-00805f9b34fb','0000ff12-0000-1000-8000-00805f9b34fb'];
 /* Filtros de búsqueda Bluetooth: impresoras térmicas Phomemo (servicio ff00 o nombre conocido). */
 var BT_FILTERS=[{services:[SVC]},{namePrefix:'T02'},{namePrefix:'Phomemo'},{namePrefix:'Mr.in'},{namePrefix:'M02'},{namePrefix:'M110'},{namePrefix:'M120'},{namePrefix:'M220'},{namePrefix:'D30'},{namePrefix:'Printer'},{namePrefix:'Thermal'},{namePrefix:'POS'}];
 
@@ -1131,9 +1138,9 @@ function plain(v){return receipt(v).map(function(x){return x.t}).join('\n')}
 function html(v){return receipt(v).map(function(x){var t=esc(x.t);if(x.b)t='<b>'+t+'</b>';return x.s>1?'<span style="font-size:'+x.s+'em">'+t+'</span>':t}).join('\n')}
 
 /* ---------- Imagen e impresión ---------- */
-function renderCanvas(v,cols,sc,thick){sc=sc||1;var L=receipt(v,cols),cw=12*sc,W=cols*cw,c=document.createElement('canvas'),g=c.getContext('2d');
+function renderCanvas(v,cols,sc,thick){/* thick: false | true | 2 (más grueso) */sc=sc||1;var L=receipt(v,cols),cw=12*sc,W=cols*cw,c=document.createElement('canvas'),g=c.getContext('2d');
  g.font='bold 20px '+FONT;var mw=g.measureText('0').width||12,fs=Math.max(10,Math.floor(20*cw/mw)),pad=6*sc,H=pad*2+4*sc,hs=L.map(function(x){var h=fs*(x.s||1)+5*sc;H+=h;return h});
- c.width=W;c.height=Math.ceil(H+fs*2);g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.fillStyle='#000';g.strokeStyle='#000';g.lineWidth=sc*.8;g.textBaseline='top';
+ c.width=W;c.height=Math.ceil(H+fs*2);g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.fillStyle='#000';g.strokeStyle='#000';g.lineWidth=sc*(thick===2?1.6:.8);g.textBaseline='top';
  var y=pad;L.forEach(function(x,i){g.font='bold '+fs*(x.s||1)+'px '+FONT;g.fillText(x.t,0,y);if(thick)g.strokeText(x.t,0,y);y+=hs[i]});return c}
 function toImage(v,sc,cb){renderCanvas(v,S.cols,sc,false).toBlob(cb,'image/png')}
 function fname(v){return 'factura-'+String(v.no).padStart(4,'0')+'.png'}
@@ -1143,22 +1150,41 @@ function preview(b){$('fpi').src=URL.createObjectURL(b);$('fpv').style.display='
 function setSt(t,k){var e=$('fst');e.textContent=t||'';e.className='hint'+(k?' '+k:'')}
 function btOK(){return !!(navigator.bluetooth&&navigator.bluetooth.requestDevice)}
 /* Conversión a mapa de bits de 1 bit por punto (bit más significativo = punto izquierdo), formato requerido por la impresora. */
-function raster(cv){var w=cv.width,h=cv.height,wb=Math.ceil(w/8),d=cv.getContext('2d').getImageData(0,0,w,h).data,o=new Uint8Array(wb*h);
- for(var y=0;y<h;y++)for(var x=0;x<w;x++){var i=(y*w+x)*4;if(.299*d[i]+.587*d[i+1]+.114*d[i+2]<195)o[y*wb+(x>>3)]|=0x80>>(x&7)}
+function raster(cv,th){th=th||195;var w=cv.width,h=cv.height,wb=Math.ceil(w/8),d=cv.getContext('2d').getImageData(0,0,w,h).data,o=new Uint8Array(wb*h);
+ for(var y=0;y<h;y++)for(var x=0;x<w;x++){var i=(y*w+x)*4;if(.299*d[i]+.587*d[i+1]+.114*d[i+2]<th)o[y*wb+(x>>3)]|=0x80>>(x&7)}
  for(var k=0;k<o.length;k++)if(o[k]===0x0a)o[k]=0x14;
  return{wb:wb,h:h,data:o}}
 async function btConnect(stage){
  if(PR.chr&&PR.dev&&PR.dev.gatt&&PR.dev.gatt.connected)return PR.chr;
- if(!PR.dev){stage('pick');PR.dev=await navigator.bluetooth.requestDevice({filters:BT_FILTERS,optionalServices:[SVC]});PR.dev.addEventListener('gattserverdisconnected',function(){PR.chr=null})}
- try{stage('connect');var srv=await PR.dev.gatt.connect();stage('service');var sv=await srv.getPrimaryService(SVC);stage('char');PR.chr=await sv.getCharacteristic(CHR);return PR.chr}
- catch(e){PR.dev=null;PR.chr=null;throw e}}
-async function btWrite(chr,bytes){for(var i=0;i<bytes.length;i+=128){var p=bytes.slice(i,i+128);if(chr.writeValueWithoutResponse)await chr.writeValueWithoutResponse(p);else await chr.writeValue(p);await sleep(15)}}
+ if(!PR.dev){stage('pick');
+  PR.dev=await navigator.bluetooth.requestDevice(PR.all?{acceptAllDevices:true,optionalServices:KNOWN}:{filters:BT_FILTERS,optionalServices:KNOWN});
+  PR.dev.addEventListener('gattserverdisconnected',function(){PR.chr=null})}
+ try{stage('connect');var srv=await PR.dev.gatt.connect();stage('service');
+  var svs=await srv.getPrimaryServices(),ph=null,gen=null;
+  svs.sort(function(x,y){var i=KNOWN.indexOf(x.uuid),j=KNOWN.indexOf(y.uuid);return (i<0?99:i)-(j<0?99:j)});
+  stage('char');
+  for(var k=0;k<svs.length;k++){var cs=await svs[k].getCharacteristics();
+   for(var m=0;m<cs.length;m++){var c=cs[m],p=c.properties||{};
+    if(svs[k].uuid===SVC&&c.uuid===CHR)ph=c;
+    else if(!gen&&(p.writeWithoutResponse||p.write))gen=c}}
+  var best=ph||gen;if(!best)throw new Error('La impresora no expone un canal de escritura reconocido.');
+  PR.ph=!!ph||/^(T02|Phomemo|Mr\.in|M02|M110|M120|M220|D30)/i.test(PR.dev.name||'');
+  PR.chr=best;PR.all=false;return best}
+ catch(e){try{PR.dev.gatt.disconnect()}catch(_){}PR.dev=null;PR.chr=null;throw e}}
+async function btSend(chr,p){var pr=chr.properties||{};
+ if(pr.writeWithoutResponse&&chr.writeValueWithoutResponse)await chr.writeValueWithoutResponse(p);
+ else if(chr.writeValueWithResponse)await chr.writeValueWithResponse(p);else await chr.writeValue(p)}
+/* Envía en bloques de 128 bytes; si la impresora no los acepta, baja a 20 bytes (tamaño mínimo garantizado de BLE). */
+async function btWrite(chr,bytes){var i=0;
+ while(i<bytes.length){var sz=PR.sz||128,p=bytes.slice(i,i+sz);
+  try{await btSend(chr,p)}catch(e){if(sz>20){PR.sz=20;await sleep(60);continue}throw e}
+  i+=p.length;await sleep(sz>20?15:25)}}
 async function printBT(v){if(busy||!v)return;busy=true;var b=$('fimg'),st='pick';b.disabled=true;
  try{setSt(PR.dev?'Conectando con la impresora…':'Buscando impresoras Bluetooth. Seleccione la suya en la lista.');
-  var chr=await btConnect(function(x){st=x});st='print';setSt('Imprimiendo…');
-  var R=raster(renderCanvas(v,32,1,true)),BL=24;
+  var chr=await btConnect(function(x){st=x});st='print';setSt('Imprimiendo en '+((PR.dev&&PR.dev.name)||'la impresora')+'…');
+  var dn=S.dens,cols=(S.cols===48&&!/^(T02|Mr\.in|M02)/i.test((PR.dev&&PR.dev.name)||''))?48:32,R=raster(renderCanvas(v,cols,1,dn===0?false:(dn===2?2:true)),dn===0?170:(dn===2?225:195)),BL=24;
   await btWrite(chr,new Uint8Array([0x1b,0x40]));
-  if(S.dens)await btWrite(chr,new Uint8Array([0x1b,0x4e,0x0d,S.dens===2?2:3,0x1b,0x4e,0x04,S.dens===2?15:12]));
+  if(S.dens&&PR.ph)await btWrite(chr,new Uint8Array([0x1b,0x4e,0x0d,S.dens===2?2:3,0x1b,0x4e,0x04,S.dens===2?15:12]));
   for(var y=0;y<R.h;y+=BL){var n=Math.min(BL,R.h-y),blk=new Uint8Array(8+n*R.wb);
    blk.set([0x1d,0x76,0x30,0x00,R.wb&255,R.wb>>8,n&255,n>>8]);blk.set(R.data.subarray(y*R.wb,(y+n)*R.wb),8);
    await btWrite(chr,blk);await sleep(110);setSt('Imprimiendo… '+Math.min(100,Math.round((y+n)/R.h*100))+' %')}
@@ -1166,10 +1192,10 @@ async function printBT(v){if(busy||!v)return;busy=true;var b=$('fimg'),st='pick'
   setSt('Factura enviada a la impresora.','ok')}
  catch(e){var nm=(e&&e.name)||'',m=nm+' '+((e&&e.message)||'');
   if(st==='pick'){
-   if(/NotFound/i.test(nm)){setSt('No se seleccionó ninguna impresora. Verifique que esté encendida, cerca del teléfono y con Bluetooth activado. Toque Imprimir para buscar de nuevo; solo se mostrarán impresoras compatibles.','bad')}
+   if(/NotFound/i.test(nm)){var was=PR.all;PR.all=true;setSt(was?'No se seleccionó ninguna impresora. Verifique que esté encendida, cerca del teléfono y sin conexión a otro dispositivo. Toque Imprimir para buscar de nuevo.':'No se encontró una impresora conocida. Toque Imprimir otra vez: ahora se mostrarán todos los dispositivos Bluetooth cercanos; elija su impresora.','bad')}
    else if(/policy|security|not allowed|disallowed|permission|gesture/i.test(m)){setSt('El navegador no permitió abrir la búsqueda Bluetooth. Use Chrome, permita «Dispositivos cercanos» y ubicación, y toque Imprimir de nuevo. También puede enviar la imagen a la app de la impresora.','bad');toImage(v,2,preview)}
    else setSt('No fue posible buscar impresoras ('+(e&&e.message?e.message:'error desconocido')+').','bad')}
-  else if(st==='service'||st==='char'){setSt('La impresora seleccionada no es compatible. Toque Imprimir y elija una impresora térmica compatible (por ejemplo, T02).','bad')}
+  else if(st==='service'||st==='char'){setSt('No se pudo comunicar con esa impresora ('+(e&&e.message?e.message:'sin canal de escritura')+'). Toque Imprimir y elija otra, o envíe la imagen a la app de la impresora.','bad')}
   else if(st==='connect')setSt('No fue posible conectar con la impresora. Verifique que esté encendida, cerca del teléfono y sin conexión a otra aplicación (solo admite una conexión a la vez), e intente nuevamente.','bad');
   else setSt('Se interrumpió la impresión ('+(e&&e.message?e.message:'error desconocido')+'). Toque Imprimir para reintentar.','bad')}
  b.disabled=false;busy=false}
@@ -1222,7 +1248,16 @@ $('fgen').onclick=function(){var it=draftItems();
 $('fbk').onclick=function(){tab(from)};
 $('fwa').onclick=function(){if(!cur)return;var v=cur;shareImage(v,function(b,f){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;document.body.appendChild(a);a.click();a.remove();setSt('Imagen guardada. Se abrirá WhatsApp para que la adjunte.','ok');window.open('https://wa.me/'+phone(v.tel),'_blank')})};
 $('fimg').onclick=function(){printNow(cur)};
-$('fdel').onclick=function(){if(cur&&confirm('¿Eliminar esta factura del historial?')){S.inv=S.inv.filter(function(i){return i.no!==cur.no});save();tab('hist')}};
+$('fdel').onclick=function(){if(!cur||!confirm('¿Eliminar esta factura del historial? Se eliminará para todos los usuarios.'))return;
+ var btn=$('fdel'),no=cur.no,old=btn.textContent;btn.disabled=true;btn.textContent='Eliminando…';
+ (window.fcDeleteInvoice?window.fcDeleteInvoice(no):Promise.reject(new Error('Sincronización no disponible'))).then(function(){
+  btn.disabled=false;btn.textContent=old;
+  S.inv=S.inv.filter(function(i){return i.no!==no});save();tab('hist');
+  try{window.FC.toast('Factura eliminada')}catch(e){}
+ },function(e){
+  btn.disabled=false;btn.textContent=old;
+  alert('No se pudo eliminar la factura: '+((e&&e.code)?e.code+' — ':'')+((e&&e.message)||'error desconocido')+'\nNo se eliminó nada. Verifique la conexión y sus permisos.');
+ })};
 $('fpc').onclick=function(){$('fpv').style.display='none'};
 window.addEventListener('factopen',function(){drawItems()});
 function fillAj(){var b=window.__fcBiz||{};var $=function(i){var e=document.getElementById(i);return e===document.activeElement?{style:{}}:e};var owner=window.__fcOwner!==false;S.biz={n:b.n||'',t:b.t||'',d:[b.rnc?'RNC: '+b.rnc:'',b.dir||''].filter(Boolean).join(' · ')};S.cols=b.paperWidth===48?48:32;S.dens=(b.printDensity===0||b.printDensity===2)?b.printDensity:1;$('fbn').value=b.n||'';$('fbt').value=b.t||'';$('fbc').value=b.c||'';$('fbr').value=b.rnc||'';$('fbd').value=b.dir||'';$('fpp').value=String(S.cols);$('fdn').value=String(S.dens);['fbn','fbt','fbc','fbr','fbd'].forEach(function(id){$(id).readOnly=!owner});$('fb-savebiz').style.display=owner?'block':'none';$('fpp').disabled=!owner;$('fdn').disabled=!owner}
