@@ -384,7 +384,7 @@ function mergeCosteo(cloudJson,localJson,D,knownJson){
 var retryT=null,pend=false;
 function typing(){var a=document.activeElement;return !!(a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)&&a.closest&&a.closest('main'))}
 function applyCloud(){
- if(typing()||L.q!=null||L.fl){pend=true;return}
+ if(typing()||L.q!=null||L.fl||(typeof editing!=='undefined'&&editing)){pend=true;return}
  pend=false;L.rec=window.__fcCloudRec;fire(K.rec);
 }
 document.addEventListener('focusout',function(){setTimeout(function(){if(pend)applyCloud()},400)});
@@ -912,7 +912,7 @@ function cpNew(){var c=S.c||{};return{min:'',hora:c.hora||'',en:'',emp:'',env:''
 function uRaw(p){var a=[S.rec,S.lines,S.c];S.rec=p.rec;S.lines=p.lines;S.c=p.c;var R=calc();S.rec=a[0];S.lines=a[1];S.c=a[2];return R.err?0:R.pv*(1+R.iva)}
 function uPrice(p){return Math.round(uRaw(p)*100)/100}
 function renderProdList(){$('plist').innerHTML='<button class="pri" id="pnew" type="button" style="width:100%;margin-bottom:12px">+ Nueva receta</button>'+(S.prods.length?S.prods.map(function(p){var w=uRaw(p),u=Math.round(w*100)/100,pk=Math.floor(N(p.pack));return '<div class="card"><b>'+esc(p.rec.n||'Receta sin nombre')+'</b><div class="lead" style="margin:2px 0 10px">'+esc(p.rec.rinde||1)+' unid. por tanda · '+(u>0?'Precio: '+fmt(u)+' por unidad'+(pk>1?' · paquete de '+pk+' a '+fmt(Math.round(w*pk*100)/100):''):'Falta completar la receta')+'<br>'+(u>0&&(p.rec.n||'').trim()?'✓ Disponible en Facturación':'No aparece en Facturación hasta tener nombre y receta completa')+'</div><div class="g2" style="margin:0"><button type="button" data-popen="'+esc(p.id)+'">Editar</button><button type="button" data-pdel="'+esc(p.id)+'" style="color:#ffb4b4">Eliminar</button></div></div>'}).join(''):'<div class="empty">No hay recetas registradas.</div>')}
-function showList(){editing=false;dropDrafts();$('plist').style.display='';$('pedit').style.display='none';$('ptitle').textContent='Recetas';renderProdList();window.scrollTo(0,0)}
+function showList(){editing=false;dropDrafts();$('plist').style.display='';$('pedit').style.display='none';$('ptitle').textContent='Recetas';renderProdList();window.scrollTo(0,0);if(pend)applyCloud()}
 function openProd(id){var p=null;S.prods.forEach(function(x){if(x.id===id)p=x});if(!p)return;S.cur=id;S.rec=p.rec;S.lines=p.lines;S.c=p.c;editing=true;$('sc_u').value=p.pack>1?p.pack:'';syncSC();$('plist').style.display='none';$('pedit').style.display='';$('ptitle').textContent='Editar receta';fill();renderIngs();renderLines();go(0);save()}
 function newProd(){var p={id:'r'+Date.now(),draft:true,rec:{n:'',rinde:'1'},lines:[],c:cpNew()};S.prods.push(p);openProd(p.id);go(0)}
 function dropDrafts(){var n=S.prods.length;S.prods=S.prods.filter(function(p){return !p.draft});if(S.prods.length!==n){if(S.cur&&!curProd()){S.cur=null;S.rec={n:'',rinde:'1'};S.lines=[];S.c=cpNew()}save()}}
